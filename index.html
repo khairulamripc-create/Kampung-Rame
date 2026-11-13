@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Kampung Rame — Desa Live dari Usulan Warga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --hijau:#2f5d43; --hijau2:#3f7a57; --krem:#fbf3e4; --kayu:#6b4226; --emas:#f2b134; --merah:#c8553d;
+  --teks:#2a2a2a; --abu:#6f6a61; --panel:#fffaf0; --garis:#e6dcc8;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#1d3a2a;font-family:Nunito,system-ui,sans-serif;color:var(--teks)}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
+.top{position:fixed;top:10px;left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none;z-index:5;flex-wrap:wrap}
+.chip{pointer-events:auto;background:rgba(255,250,240,.95);border:2px solid var(--kayu);border-radius:14px;padding:6px 12px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 var(--kayu)}
+.brand{font-family:Fredoka,sans-serif;font-size:18px;color:var(--hijau)}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:#aaa}
+.chip .dot.on{background:#3cb371;box-shadow:0 0 0 3px rgba(60,179,113,.25)}
+.spacer{flex:1}
+.kr{color:#8a5a00}
+.zoom{position:fixed;right:10px;top:64px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.btn-sq{width:40px;height:40px;border-radius:12px;border:2px solid var(--kayu);background:var(--panel);font-weight:800;font-size:20px;box-shadow:0 3px 0 var(--kayu);cursor:pointer}
+.btn-sq:active{transform:translateY(2px);box-shadow:0 1px 0 var(--kayu)}
+nav.bottom{position:fixed;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:4px;background:rgba(255,250,240,.97);border:2px solid var(--kayu);border-radius:18px;padding:5px;z-index:6;box-shadow:0 4px 0 var(--kayu)}
+nav.bottom button{border:0;background:transparent;font-family:Nunito;font-weight:800;font-size:12px;color:var(--abu);padding:6px 10px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;min-width:58px}
+nav.bottom button span{font-size:19px}
+nav.bottom button.aktif{background:var(--hijau);color:#fff}
+.chat{position:fixed;left:10px;bottom:84px;width:min(340px,calc(100vw - 20px));z-index:5;display:flex;flex-direction:column;gap:6px}
+.chat-log{background:rgba(20,35,26,.72);color:#fff;border-radius:12px;padding:8px 10px;font-size:13px;max-height:130px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.chat-log:empty{display:none}
+.chat-log b{color:var(--emas)}
+.chat-log .sys{color:#bfe3c9;font-style:italic}
+.chat-row{display:flex;gap:6px}
+.chat-row input{flex:1;border:2px solid var(--kayu);border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;background:var(--panel);min-width:0}
+.btn{border:2px solid var(--kayu);background:var(--emas);color:#3b2a10;font-family:Fredoka;font-weight:600;font-size:15px;border-radius:12px;padding:8px 14px;box-shadow:0 3px 0 var(--kayu);cursor:pointer}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--kayu)}
+.btn.hijau{background:var(--hijau2);color:#fff}
+.btn.putih{background:#fff}
+.btn.kecil{font-size:13px;padding:5px 10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{position:fixed;left:50%;transform:translateX(-50%);top:62px;background:rgba(20,35,26,.8);color:#fff;font-weight:700;font-size:13px;padding:6px 12px;border-radius:20px;z-index:4;pointer-events:none;transition:opacity .4s;white-space:nowrap}
+.prompt{position:fixed;left:50%;transform:translateX(-50%);bottom:140px;z-index:5;display:none}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:9;display:none}
+.sheet{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(560px,100vw);max-height:78vh;overflow-y:auto;background:var(--panel);border:3px solid var(--kayu);border-bottom:0;border-radius:22px 22px 0 0;z-index:10;padding:18px 18px 26px;display:none;box-shadow:0 -6px 30px rgba(0,0,0,.25)}
+.sheet h2{font-family:Fredoka;color:var(--hijau);font-size:22px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.sheet .sub{color:var(--abu);font-size:14px;margin-bottom:14px}
+.sheet .tutup{position:absolute;right:14px;top:12px}
+.kartu{background:#fff;border:2px solid var(--garis);border-radius:14px;padding:12px;margin-bottom:10px}
+.kartu.emas{border-color:var(--emas);background:#fff8e6}
+.usulan{display:flex;gap:10px;align-items:center}
+.usulan .isi{flex:1;min-width:0}
+.usulan .teks{font-weight:800;word-wrap:break-word}
+.usulan .meta{font-size:12px;color:var(--abu)}
+.vote{display:flex;flex-direction:column;align-items:center;min-width:56px}
+.vote .n{font-family:Fredoka;font-size:20px;color:var(--hijau)}
+.vote button{border:2px solid var(--hijau2);background:#fff;color:var(--hijau2);border-radius:10px;font-weight:800;font-size:12px;padding:3px 8px;cursor:pointer}
+.vote button.pilih{background:var(--hijau2);color:#fff}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;background:#e3f1e7;color:var(--hijau)}
+.badge.dibangun{background:#ffe7b3;color:#8a5a00}
+.form-row{display:flex;gap:8px;margin-bottom:12px}
+.form-row input,.form-row select,textarea{flex:1;border:2px solid var(--garis);border-radius:12px;padding:10px 12px;font:inherit;font-weight:700;background:#fff;min-width:0}
+textarea{width:100%;min-height:90px;resize:vertical;margin-bottom:8px}
+label.lbl{display:block;font-weight:800;font-size:13px;color:var(--abu);margin:8px 0 4px}
+.warna-pilih{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.warna-pilih button{width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--garis);cursor:pointer}
+.warna-pilih button.pilih{box-shadow:0 0 0 3px var(--kayu)}
+.ktp{background:linear-gradient(135deg,#d9ecf7,#f3f9fd);border:2px solid #7aa7c7;border-radius:16px;padding:14px;display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.ktp .foto{width:64px;height:76px;border-radius:10px;background:#fff;border:2px solid #7aa7c7;display:flex;align-items:center;justify-content:center}
+.ktp .baris{font-size:13px}
+.ktp .baris b{display:inline-block;width:72px;color:#3b6584}
+.ktp .judul{font-family:Fredoka;color:#3b6584;font-size:14px;letter-spacing:.5px;margin-bottom:4px}
+.rt-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rt-row .nama{width:64px;font-weight:800}
+.rt-row .bar{flex:1;height:22px;background:#eee4d0;border-radius:12px;overflow:hidden}
+.rt-row .bar div{height:100%;border-radius:12px;transition:width .5s}
+.rt-row .angka{width:70px;text-align:right;font-family:Fredoka;color:var(--hijau)}
+table.top{width:100%;border-collapse:collapse;font-size:14px}
+table.top td{padding:6px 4px;border-bottom:1px dashed var(--garis)}
+table.top td.r{text-align:right;font-family:Fredoka;color:#8a5a00}
+.game-area{text-align:center;padding:10px 0}
+.pancing-bar{position:relative;height:34px;background:#cfe6f5;border:2px solid #3d6f99;border-radius:18px;margin:16px 0;overflow:hidden}
+.pancing-zona{position:absolute;top:0;bottom:0;background:rgba(60,179,113,.6)}
+.pancing-jarum{position:absolute;top:-2px;bottom:-2px;width:6px;background:var(--merah);border-radius:3px}
+.besar{font-size:54px;line-height:1.1}
+.status{font-family:Fredoka;font-size:20px;color:var(--hijau);min-height:28px;margin:6px 0}
+.opsi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.opsi button{border:2px solid var(--garis);background:#fff;border-radius:12px;padding:12px 8px;font:inherit;font-weight:800;cursor:pointer}
+.opsi button.benar{background:#d6f5df;border-color:#3cb371}
+.opsi button.salah{background:#fde0db;border-color:var(--merah)}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-20px);background:var(--hijau);color:#fff;font-weight:800;padding:10px 16px;border-radius:14px;z-index:20;opacity:0;transition:all .3s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.kosong{color:var(--abu);text-align:center;padding:16px;font-weight:700}
+.warung-item{display:flex;align-items:center;gap:10px}
+.warung-item .e{font-size:30px}
+.warung-item .isi{flex:1}
+@media (max-width:600px){
+  .brand{font-size:15px}
+  .chip{font-size:12px;padding:5px 9px}
+  .chat{bottom:80px}
+  .chat-log{max-height:90px}
+  nav.bottom button{min-width:52px;padding:5px 6px;font-size:11px}
+  .hint{font-size:11px}
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="top">
+  <div class="chip brand">🏡 Kampung Rame</div>
+  <div class="chip" id="chipHari">HARI 1 · <span id="jam">--:--</span></div>
+  <div class="chip"><span class="dot" id="dotLive"></span><span id="online">sendiri</span></div>
+  <div class="chip" id="chipEvent" style="cursor:pointer">…</div>
+  <div class="spacer"></div>
+  <div class="chip kr" id="chipKr">🪙 0 Kr</div>
+</div>
+<div class="zoom">
+  <button class="btn-sq" id="zIn" aria-label="Perbesar">+</button>
+  <button class="btn-sq" id="zOut" aria-label="Perkecil">−</button>
+  <button class="btn-sq" id="zMe" aria-label="Ke posisiku" style="font-size:17px">📍</button>
+</div>
+<div class="hint" id="hint">WASD/panah untuk jalan · Shift lari · Enter chat · tap bangunan</div>
+<div class="prompt" id="prompt"><button class="btn" id="promptBtn">E · Masuk</button></div>
+
+<div class="chat">
+  <div class="chat-log" id="chatLog"></div>
+  <form class="chat-row" id="chatForm">
+    <input id="chatInput" maxlength="80" placeholder="Ngobrol sama warga…" autocomplete="off">
+    <button class="btn hijau" type="submit">Kirim</button>
+  </form>
+</div>
+
+<nav class="bottom">
+  <button data-tab="peta" class="aktif"><span>🗺️</span>Peta</button>
+  <button data-tab="usulan"><span>📋</span>Usulan</button>
+  <button data-tab="klasemen"><span>🏆</span>Klasemen</button>
+  <button data-tab="ktp"><span>🪪</span>KTP</button>
+  <button data-tab="info"><span>📢</span>Info</button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet"><button class="btn putih kecil tutup" id="tutup">Tutup ✕</button><div id="sheetIsi"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+'use strict';
+// ================= KONSTANTA DUNIA =================
+const T = 32, W = 48, H = 36;
+const RUMPUT=0, JALAN=1, AIR=2, SAWAH=3, POHON=4, DERMAGA=6, LAPANGAN=7;
+const LAHIR = new Date('2026-11-14T00:00:00+07:00').getTime();
+const REF_TUTUP = new Date('2026-11-13T20:00:00+07:00').getTime(); // voting ditutup tiap 20.00 WIB
+const HARI_MS = 864e5, SLOT_MS = 6*3600e3, WIB = 7*3600e3;
+const siklusKini = (t=Date.now()) => Math.floor((t-REF_TUTUP)/HARI_MS);       // siklus voting yang sedang dibuka
+const waktuTutup = c => REF_TUTUP + (c+1)*HARI_MS;
+const slotKini = (t=Date.now()) => Math.floor((t-LAHIR)/SLOT_MS);
+function wib(t=Date.now()){ const d=new Date(t+WIB); return {h:d.getUTCHours()+d.getUTCMinutes()/60, jam:d.getUTCHours(), mnt:d.getUTCMinutes(), dow:d.getUTCDay(), hari:Math.floor((t+WIB)/HARI_MS)}; }
+function hashN(n){ n = (n ^ 61) ^ (n >>> 16); n = (n + (n << 3)) | 0; n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); n ^= n >>> 15; return n >>> 0; }
+const EVENT = [
+  {k:'panen', e:'🌾', teks:'Panen raya di sawah! {RT} kebagian hasil terbanyak.', bonus:20},
+  {k:'maling', e:'🐔', teks:'Maling ayam tertangkap berkat ronda {RT}!', bonus:15},
+  {k:'hujan', e:'🌧️', teks:'Hujan deras turun, kolam penuh ikan. Hadiah mancing x2!'},
+  {k:'kerjabakti', e:'🧹', teks:'{RT} kerja bakti membersihkan jalan desa.', bonus:10},
+  {k:'tamu', e:'🧳', teks:'Tamu dari kota memborong gorengan. Warung Bu Siti diskon!'},
+  {k:'arwana', e:'✨', teks:'Warga melihat arwana di kolam! Peluang ikan langka naik.'},
+  {k:'lampu', e:'💡', teks:'Lampu jalan baru dipasang, desa makin terang.'},
+  {k:'lomba', e:'🏃', teks:'Lomba balap karung antar-RT! {RT} juara.', bonus:12},
+];
+function eventDi(slot){
+  const h = hashN(slot*7919+13);
+  const ev = EVENT[h % EVENT.length], rt = ['RT 01','RT 02','RT 03','RT 04'][(h>>>8)%4];
+  return {...ev, slot, rt: ev.bonus? rt : null, teks: ev.teks.replace('{RT}', rt), mulai: LAHIR + slot*SLOT_MS};
+}
+const eventKini = () => eventDi(slotKini());
+function bonusEventRT(){
+  const tot = {'RT 01':0,'RT 02':0,'RT 03':0,'RT 04':0};
+  for (let s=0; s<=slotKini(); s++){ const e=eventDi(s); if (e.bonus && e.rt) tot[e.rt]+=e.bonus; }
+  return tot;
+}
+const pasarMalam = () => { const w=wib(); return (w.dow===5||w.dow===6) && w.h>=18 && w.h<23; };
+const MISI = [
+  {k:'ikan', teks:'Tangkap 3 ikan di kolam', target:3},
+  {k:'kuis', teks:'Jawab 5 soal kuis dengan benar', target:5},
+  {k:'jajan', teks:'Jajan 2 kali di warung', target:2},
+  {k:'chat', teks:'Kirim 3 pesan ke warga', target:3},
+  {k:'vote', teks:'Pilih 1 usulan di papan', target:1},
+];
+const misiHariIni = () => MISI[hashN(wib().hari) % MISI.length];
+const WARNA = ['#e76f51','#2a9d8f','#e9c46a','#8e7dbe','#f28482','#4d908e','#577590','#bc6c25','#ff7aa2','#43aa8b'];
+const RTS = ['RT 01','RT 02','RT 03','RT 04'];
+const RT_WARNA = {'RT 01':'#e76f51','RT 02':'#2a9d8f','RT 03':'#e9c46a','RT 04':'#8e7dbe'};
+
+const BANGUNAN = [
+  {id:'balai', nama:'Balai Desa', e:'🏛️', x:26,y:11,w:6,h:4, body:'#efe1bd', roof:'#9b2226'},
+  {id:'warung', nama:'Warung Bu Siti', e:'🍵', x:16,y:12,w:5,h:4, body:'#f4b183', roof:'#6d4c41'},
+  {id:'ronda', nama:'Pos Ronda', e:'🔦', x:26,y:20,w:3,h:3, body:'#d4a373', roof:'#5c3d2e'},
+  {id:'papan', nama:'Papan Usulan', e:'📋', x:20,y:20,w:2,h:1, papan:true},
+];
+const OBJEK = [
+  {id:'kolam', nama:'Kolam Pancing', e:'🎣', x:10.5, y:22.5},
+  {id:'lapangan', nama:'Lapangan Badminton', e:'🏸', x:36.5, y:25},
+];
+const SLOT = [[4,13],[9,13],[33,12],[38,12],[43,12],[33,5],[38,5],[43,5],[26,4],[16,4],[17,24],[17,30],[28,26],[42,22],[36,30],[42,30]];
+const KADES = {x:28.8, y:16.1};
+
+// ================= PETA STATIS =================
+const peta = [];
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let y=0;y<H;y++){ peta.push(new Array(W).fill(RUMPUT)); }
+const isi = (x,y,w,h,t)=>{ for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++) if(peta[j]&&peta[j][i]!==undefined) peta[j][i]=t; };
+isi(0,17,W,2,JALAN); isi(23,0,2,H,JALAN);
+isi(2,2,12,10,SAWAH);
+isi(6,22,10,9,AIR);
+isi(10,21,2,4,DERMAGA);
+isi(32,22,9,6,LAPANGAN);
+isi(29,15,1,2,JALAN); isi(18,16,1,1,JALAN); isi(21,19,1,1,JALAN);
+const zonaTerlarang = [];
+BANGUNAN.forEach(b=>zonaTerlarang.push([b.x-1,b.y-1,b.w+2,b.h+2]));
+SLOT.forEach(s=>zonaTerlarang.push([s[0]-1,s[1]-1,6,5]));
+zonaTerlarang.push([31,21,11,8],[5,20,12,12],[27,14,4,4],[30,19,17,2],[6,11,6,3]);
+const diZona=(x,y)=>zonaTerlarang.some(z=>x>=z[0]&&x<z[0]+z[2]&&y>=z[1]&&y<z[1]+z[3]);
+for (let y=0;y<H;y++)for(let x=0;x<W;x++){
+  if (peta[y][x]!==RUMPUT) continue;
+  const tepi = x<1||y<1||x>=W-1||y>=H-1;
+  if (tepi || (!diZona(x,y) && rnd()<0.09)) peta[y][x]=POHON;
+}
+
+// ================= STATE =================
+const S = {
+  uid: null, nama:'', rt:'RT 01', warna:WARNA[0], kr:0,
+  usulan:[], votes:{}, skor:[], info:{teks:''}, bangunan:[],
+  owner:false, dbOn:false, roomOn:false, bisaTulis:true,
+  state:{siklus:-1}, stateLoaded:false, votesLoaded:false, usulanLoaded:false,
+};
+const me = {x:24*T, y:19.5*T, dir:1, moving:false, msg:'', mt:0, target:null, emo:''};
+const peers = new Map();  // peer -> {x,y,tx,ty,n,rt,c,msg,mt,isMe}
+const lastMt = {};
+let zoom = 1.15, cam = {x:me.x, y:me.y}, keys = {};
+
+const ls = {
+  get(k,d){ try{ const v = localStorage.getItem('kr_'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem('kr_'+k, JSON.stringify(v)); }catch(e){} }
+};
+const prof = ls.get('ktp', null);
+if (prof){ S.nama=prof.nama; S.rt=prof.rt; S.warna=prof.warna; }
+S.kr = ls.get('kr', 0);
+S.uid = ls.get('uid', null) || ('lokal-'+Math.random().toString(36).slice(2,10));
+ls.set('uid', S.uid);
+
+// ================= UTIL =================
+const $ = id => document.getElementById(id);
+const el = (tag, attrs={}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const k in attrs){
+    if (k==='class') e.className = attrs[k];
+    else if (k==='style') e.style.cssText = attrs[k];
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), attrs[k]);
+    else if (k==='text') e.textContent = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  kids.flat().forEach(c => { if (c==null) return; e.append(c.nodeType? c : document.createTextNode(String(c))); });
+  return e;
+};
+const bersih = (s, max) => String(s||'').replace(/[\u0000-\u001f\u007f​-‏‪-‮]/g,'').trim().slice(0,max);
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2600); }
+function hariKe(t=Date.now()){ return Math.max(1, Math.floor((t-LAHIR)/86400000)+1); }
+function namaku(){ return S.nama || 'Warga Baru'; }
+
+// ================= DATA (SUPABASE) =================
+const SB_URL = 'https://awndxypledtrgeswmgdj.supabase.co';
+const SB_KEY = 'sb_publishable_CgejV4M45R7nukrFCIUmSA_9K6uwGhN';
+let sb = null, kanal = null;
+S.voteCount = {}; S.myVote = null; S.rtTotal = null; S.terdaftar = false; S.kades = new Map();
+const isKades = id => S.kades.has(id);
+const namaKades = () => [...S.kades.values()].filter(Boolean)[0] || '';
+// ====== JABATAN DESA ======
+const JABATAN = {
+  sekdes:   {n:'Sekretaris Desa', e:'📜', pre:'Sekdes ',  gedung:['balai']},
+  ketua_rt: {n:'Ketua RT',        e:'🎖️', pre:'Ketua ',   gedung:[]},
+  dokter:   {n:'Dokter',          e:'🩺', pre:'dr. ',     gedung:['rumah sakit','puskesmas','klinik','rs ']},
+  bidan:    {n:'Bidan',           e:'💉', pre:'Bidan ',   gedung:['rumah sakit','puskesmas','klinik','rs ']},
+  guru:     {n:'Guru',            e:'📚', pre:'Guru ',    gedung:['sekolah','perpus','tk ','sd ','smp','sma']},
+  polisi:   {n:'Polisi',          e:'👮', pre:'Pak Pol ', gedung:['polisi','polsek']},
+  hansip:   {n:'Hansip',          e:'🔦', pre:'Hansip ',  gedung:['ronda']},
+  pedagang: {n:'Pedagang',        e:'🛒', pre:'Juragan ', gedung:['pasar','toko','minimarket','warung']},
+  petani:   {n:'Petani',          e:'🌾', pre:'Tani ',    gedung:['sawah','kebun']},
+  nelayan:  {n:'Nelayan',         e:'🎣', pre:'Nelayan ', gedung:['kolam']},
+};
+S.jabatan = new Map();
+let jabatanSig = null;
+function jabatanDari(id){ const j = S.jabatan.get(id); return j && JABATAN[j.kode] ? j : null; }
+function namaTampil(id, nama){
+  if (isKades(id)) return 'Pak Kades '+nama;
+  const j = jabatanDari(id); if (!j) return nama;
+  const d = JABATAN[j.kode];
+  return d.e+' '+d.pre+nama;
+}
+function teksJabatan(id){
+  if (isKades(id)) return 'Kepala Desa 👑';
+  const j = jabatanDari(id); if (!j) return 'Warga';
+  const d = JABATAN[j.kode]; return d.e+' '+(j.kode==='ketua_rt' && j.rt ? 'Ketua '+j.rt : d.n);
+}
+const diDesa = id => id===S.uid || peers.has(id);
+function petugasUntuk(namaGedung){
+  const s = ' '+String(namaGedung).toLowerCase()+' ';
+  return [...S.jabatan.entries()].filter(([id,j])=>JABATAN[j.kode] && JABATAN[j.kode].gedung.some(k=>s.includes(k)));
+}
+function elPetugas(namaGedung){
+  const daftar = petugasUntuk(namaGedung);
+  if (!daftar.length) return null;
+  return el('div',{class:'kartu'}, el('b',{text:'Petugas di sini'}),
+    ...daftar.map(([id,j])=>el('div',{style:'margin-top:4px;cursor:pointer', onclick:()=>bukaProfil(id, j.nama)},
+      (diDesa(id)?'🟢 ':'⚪ ')+namaTampil(id, j.nama||'warga')+(diDesa(id)?' · sedang bertugas':' · sedang tidak di desa'))));
+}
+
+function pesanError(e){
+  const m = (e && (e.message || e.msg)) || String(e||'');
+  if (/Terlalu cepat/.test(m)) return null;
+  if (/Batas Kr harian/.test(m)) return 'Batas Kr harian tercapai, lanjut besok ya!';
+  if (/Kr kurang/.test(m)) return 'Kr kamu kurang.';
+  if (/row-level security/.test(m)) return 'Tidak diizinkan (maksimal 3 usulan aktif per warga).';
+  if (/KTP/.test(m)) return 'Bikin KTP dulu ya.';
+  if (/Kades/.test(m)) return 'Khusus Kades.';
+  if (/Failed to fetch|NetworkError/i.test(m)) return 'Koneksi internet bermasalah, coba lagi.';
+  return 'Gagal: '+m.slice(0,80);
+}
+function gagal(e){ console.warn(e); const p = pesanError(e); if (p) toast(p); }
+function perluOnline(){ if (!S.dbOn){ toast('Belum tersambung ke desa. Cek internetmu.'); return false; } return true; }
+
+const Data = {
+  async tambahUsulan(teks){
+    if (!perluOnline()) return;
+    const {error} = await sb.from('usulan').insert({teks, nama:S.nama, rt:S.rt});
+    if (error) return gagal(error);
+    await muatData();
+  },
+  async pilih(id){
+    if (!perluOnline()) return;
+    const lama = pilihanku(), pick = lama===id ? null : id, s = siklusKini();
+    if (lama) S.voteCount[lama] = Math.max(0,(S.voteCount[lama]||1)-1);
+    if (pick){ S.voteCount[pick] = (S.voteCount[pick]||0)+1; majuMisi('vote'); }
+    S.myVote = {pick, s}; render();
+    const {error} = await sb.from('suara').upsert({user_id:S.uid, usulan_id:pick, siklus:s});
+    if (error) gagal(error);
+    muatData();
+  },
+  async hapusUsulan(id){
+    if (!perluOnline()) return;
+    const mine = S.usulan.find(u=>u.id===id && u.by===S.uid && u.status!=='dibangun');
+    const {error} = mine ? await sb.from('usulan').delete().eq('id', id) : await sb.rpc('hapus_usulan', {p_usulan:id});
+    if (error) gagal(error);
+    muatData();
+  },
+  async bangun(u){
+    if (!perluOnline()) return;
+    const {data, error} = await sb.rpc('bangun_usulan', {p_usulan:u.id});
+    if (error) return gagal(error);
+    if (!data) return toast('Lahan desa penuh atau usulan sudah dibangun.');
+    toast('🎉 '+bersih(u.teks,40)+' resmi dibangun!');
+    muatData();
+  },
+  async angkat(id, kode, nama){
+    if (!perluOnline()) return;
+    const {error} = await sb.rpc('angkat_jabatan', {p_user:id, p_kode:kode});
+    if (error) return gagal(error);
+    toast('🎉 '+nama+' resmi jadi '+JABATAN[kode].n+'!');
+    if (kanal && S.roomOn) kanal.send({type:'broadcast', event:'segarkan', payload:{}});
+    await muatData(); tutupSheet();
+  },
+  async copot(id, nama){
+    if (!perluOnline()) return;
+    const {error} = await sb.rpc('copot_jabatan', {p_user:id});
+    if (error) return gagal(error);
+    toast(nama+' sudah dicopot dari jabatannya.');
+    if (kanal && S.roomOn) kanal.send({type:'broadcast', event:'segarkan', payload:{}});
+    await muatData(); tutupSheet();
+  },
+  async setInfo(teks){
+    if (!perluOnline()) return;
+    const {error} = await sb.rpc('set_pengumuman', {teks});
+    if (error) return gagal(error);
+    ls.set('umum', bersih(teks,600));
+    if (kanal && S.roomOn) kanal.send({type:'broadcast', event:'segarkan', payload:{}});
+    muatData();
+  },
+};
+function pilihanku(){ return S.myVote && S.myVote.s===siklusKini() ? S.myVote.pick : null; }
+
+let muatSibuk = false, muatBerikut = false;
+async function muatData(){
+  if (!S.dbOn) return;
+  if (muatSibuk){ muatBerikut = true; return; }
+  muatSibuk = true;
+  try {
+    const [u, v, my, b, d, w, k, jb] = await Promise.all([
+      sb.from('usulan').select('id,teks,oleh,nama,rt,status,dibuat').order('dibuat', {ascending:false}).limit(200),
+      sb.rpc('hitung_suara'),
+      sb.from('suara').select('usulan_id,siklus').eq('user_id', S.uid).maybeSingle(),
+      sb.from('bangunan').select('id,nama,slot,oleh,rt,hari,cara,dibuat'),
+      sb.from('desa_state').select('pengumuman,siklus').eq('id', 1).maybeSingle(),
+      sb.from('warga').select('id,nama,rt,kr').order('kr', {ascending:false}).limit(50),
+      sb.rpc('klasemen_rt'),
+      sb.from('jabatan').select('user_id,kode,rt,warga(nama)'),
+    ]);
+    if (!u.error) S.usulan = u.data.map(x=>({id:x.id, teks:x.teks, by:x.oleh, nama:x.nama, rt:x.rt, status:x.status, t:Date.parse(x.dibuat)}));
+    if (!v.error){ const c={}; v.data.forEach(x=>{ c[x.usulan_id]=Number(x.n)||0; }); S.voteCount = c; }
+    if (!my.error) S.myVote = my.data && my.data.usulan_id ? {pick:my.data.usulan_id, s:my.data.siklus} : null;
+    if (!b.error){
+      S.bangunan = b.data.filter(x=>Number.isInteger(x.slot) && x.slot>=0 && x.slot<SLOT.length)
+        .map(x=>({id:x.id, nama:x.nama, e:tebakEmoji(x.nama), slot:x.slot, oleh:x.oleh, rt:x.rt, t:Date.parse(x.dibuat), hari:x.hari, cara:x.cara}));
+      cekBangunanBaru();
+    }
+    if (!d.error && d.data){
+      S.info = {teks: d.data.pengumuman || ''};
+      const lama = ls.get('umum', null), baru = bersih(S.info.teks, 600);
+      if (baru && lama !== baru){
+        if (lama !== null){ tambahLog('', '📢 Pengumuman Pak Kades: '+baru.slice(0,140), true); toast('📢 Pengumuman baru dari Pak Kades!'); }
+        ls.set('umum', baru);
+      }
+    }
+    if (!w.error) S.skor = w.data;
+    if (!k.error){ const t={}; k.data.forEach(r=>{ t[r.rt]=Number(r.total)||0; }); S.rtTotal = t; }
+    if (!jb.error){
+      const m = new Map();
+      jb.data.forEach(x=>{ if (JABATAN[x.kode]) m.set(x.user_id, {kode:x.kode, rt:x.rt, nama:bersih(x.warga && x.warga.nama, 16)}); });
+      const sig = {}; m.forEach((j,id)=>{ sig[id]=j.kode+'|'+j.rt; });
+      if (jabatanSig){
+        m.forEach((j,id)=>{ if (jabatanSig[id] !== sig[id]){
+          tambahLog('', '🎉 '+(j.nama||'Warga')+' diangkat jadi '+(j.kode==='ketua_rt'&&j.rt?'Ketua '+j.rt:JABATAN[j.kode].n)+' oleh Pak Kades!', true);
+          if (id===S.uid) toast('🎉 Selamat! Kamu diangkat jadi '+JABATAN[j.kode].n+' oleh Pak Kades');
+        }});
+        if (jabatanSig[S.uid] && !sig[S.uid]) toast('Jabatanmu dicopot oleh Pak Kades.');
+      }
+      jabatanSig = sig; S.jabatan = m;
+      if (sheetTerbuka() && tabAktif==='peta') {} // sheet bangunan/profil tidak di-render ulang otomatis
+    }
+    render();
+  } catch(e){ console.warn('muat', e); }
+  finally {
+    muatSibuk = false;
+    if (muatBerikut){ muatBerikut = false; muatData(); }
+  }
+}
+
+async function muatKades(){
+  const {data, error} = await sb.rpc('daftar_kades');
+  if (!error && Array.isArray(data)){ S.kades = new Map(data.map(r=>[r.user_id, r.nama||''])); }
+}
+// ====== DETAK DESA: menutup voting yang tertunda (aman dipanggil siapa pun, kapan pun) ======
+let detakSiklus = null, detakSibuk = false;
+async function detak(paksa){
+  if (!S.dbOn || detakSibuk) return;
+  const kini = siklusKini();
+  if (!paksa && detakSiklus === kini) return;
+  detakSibuk = true;
+  try {
+    const {data, error} = await sb.rpc('tutup_voting');
+    if (!error){ detakSiklus = kini; if (data > 0) muatData(); }
+  } finally { detakSibuk = false; }
+}
+
+// ====== WARGA & Kr (Kr disimpan di server lewat fungsi ubah_kr yang punya batas) ======
+async function simpanWarga(){
+  if (!S.dbOn || !S.nama) return;
+  const row = {nama:S.nama, rt:S.rt, warna:S.warna};
+  let {data, error} = await sb.from('warga').update(row).eq('id', S.uid).select('id');
+  if (!error && (!data || !data.length)) ({error} = await sb.from('warga').insert({id:S.uid, ...row}));
+  if (error) return gagal(error);
+  S.terdaftar = true;
+  jalankanKr();
+  muatData();
+}
+function simpanSkor(){ return simpanWarga(); }
+const antrianKr = []; let krJalan = false;
+function tambahKr(n){
+  S.kr = Math.max(0, S.kr + n); ls.set('kr', S.kr); updateTop();
+  while (n > 50){ antrianKr.push(50); n -= 50; }
+  if (n) antrianKr.push(n);
+  jalankanKr();
+}
+async function jalankanKr(){
+  if (krJalan || !S.dbOn || !S.terdaftar) return;
+  krJalan = true;
+  try {
+    while (antrianKr.length){
+      const n = antrianKr[0];
+      const {data, error} = await sb.rpc('ubah_kr', {jumlah:n});
+      if (error && /Terlalu cepat/.test(error.message||'')){ await new Promise(r=>setTimeout(r, 1000)); continue; }
+      antrianKr.shift();
+      if (error){ gagal(error); S.kr = Math.max(0, S.kr - n); }
+      else S.kr = data + antrianKr.reduce((a,b)=>a+b, 0);
+      ls.set('kr', S.kr); updateTop();
+      await new Promise(r=>setTimeout(r, 1000));
+    }
+  } finally { krJalan = false; }
+}
+
+// bangunan baru sejak kunjungan terakhir → diumumkan
+function cekBangunanBaru(){
+  const lihat = ls.get('lihat', null);
+  const ids = S.bangunan.map(b=>b.id);
+  if (lihat){
+    S.bangunan.filter(b=>!lihat.includes(b.id)).forEach(b=>{
+      tambahLog('', '🏗️ Bangunan baru: '+b.e+' '+b.nama+' (usulan '+(b.oleh||'warga')+')', true);
+      toast('🏗️ '+b.nama+' resmi berdiri di desa!');
+    });
+  }
+  ls.set('lihat', ids);
+}
+// ====== BONUS HARIAN & MISI ======
+function bonusHarian(){
+  if (!S.nama) return;
+  const h = wib().hari, d = ls.get('harian', {hari:-1, streak:0});
+  if (d.hari === h) return;
+  const streak = d.hari === h-1 ? d.streak+1 : 1;
+  const bonus = 5*Math.min(streak, 7);
+  ls.set('harian', {hari:h, streak});
+  tambahKr(bonus);
+  tambahLog('', '🎁 Bonus harian +'+bonus+' Kr · streak '+streak+' hari'+(streak>=7?' 🔥':''), true);
+  toast('🎁 Bonus datang hari ini: +'+bonus+' Kr (streak '+streak+' hari)');
+}
+function statusMisi(){ const m=misiHariIni(), p=ls.get('misi',{hari:-1}); return (p.hari===wib().hari && p.k===m.k) ? p : {hari:wib().hari, k:m.k, n:0, selesai:false}; }
+function majuMisi(k){
+  const m = misiHariIni(); if (m.k!==k) return;
+  const p = statusMisi(); if (p.selesai) return;
+  p.n++; if (p.n>=m.target){ p.selesai=true; tambahKr(15); toast('🎯 Misi harian selesai! +15 Kr'); tambahLog('', '🎯 '+namaku()+' menyelesaikan misi harian', true); }
+  ls.set('misi', p);
+}
+function rekapKunjungan(){
+  const terakhir = ls.get('kunjungan', 0), kini = Date.now();
+  ls.set('kunjungan', kini);
+  if (!terakhir || kini-terakhir < 30*60000) return;
+  const dari = Math.max(slotKini(terakhir)+1, slotKini()-3);
+  const ev = []; for (let s=dari; s<=slotKini(); s++) ev.push(eventDi(s));
+  if (ev.length) tambahLog('', '📰 Selama kamu pergi: '+ev.map(e=>e.e+' '+e.teks).join(' · '), true);
+}
+function tebakEmoji(t){
+  const s = t.toLowerCase();
+  const peta = [['masjid','🕌'],['musholla','🕌'],['gereja','⛪'],['sekolah','🏫'],['pasar','🛒'],['rumah sakit','🏥'],['puskesmas','🏥'],['klinik','🏥'],['taman','🌳'],['kolam','🏊'],['lapangan','⚽'],['bola','⚽'],['kafe','☕'],['kopi','☕'],['warung','🍜'],['bakso','🍜'],['bioskop','🎬'],['perpus','📚'],['buku','📚'],['menara','🗼'],['bandara','✈️'],['stasiun','🚉'],['kantor polisi','🚓'],['pemadam','🚒'],['kebun','🌻'],['peternakan','🐄'],['kandang','🐔'],['gym','🏋️'],['studio','🎙️'],['hotel','🏨'],['bank','🏦'],['atm','🏧'],['toko','🏪'],['minimarket','🏪'],['pantai','🏖️'],['wisata','🎡'],['wahana','🎡'],['patung','🗿'],['ufo','🛸'],['roket','🚀'],['istana','🏰'],['kastil','🏰'],['pabrik','🏭'],['tower','📡'],['wifi','📶'],['jembatan','🌉'],['kuburan','🪦'],['rumah','🏠']];
+  for (const [k,e] of peta) if (s.includes(k)) return e;
+  return '🏠';
+}
+
+// ================= KANVAS =================
+const cv = $('game'), cx = cv.getContext('2d');
+let dpr = 1, VW = 0, VH = 0;
+function ukur(){ dpr = Math.min(2, window.devicePixelRatio||1); VW=innerWidth; VH=innerHeight; cv.width=VW*dpr; cv.height=VH*dpr; }
+addEventListener('resize', ukur); ukur();
+const hujan = Array.from({length:140}, ()=>({x:Math.random()*2000, y:Math.random()*1200}));
+
+const statis = document.createElement('canvas'); statis.width=W*T; statis.height=H*T;
+(function gambarStatis(){
+  const g = statis.getContext('2d');
+  seed = 99;
+  for (let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const t = peta[y][x], px=x*T, py=y*T;
+    g.fillStyle = '#7fb85e'; g.fillRect(px,py,T,T);
+    if (t===RUMPUT||t===POHON){ for(let k=0;k<3;k++){ g.fillStyle = rnd()<.5?'#74ad53':'#8cc56a'; g.fillRect(px+rnd()*28,py+rnd()*28,3,3);} if (rnd()<.06){ g.fillStyle=['#fff','#ffd166','#f28482'][Math.floor(rnd()*3)]; g.beginPath(); g.arc(px+8+rnd()*16,py+8+rnd()*16,2.5,0,7); g.fill(); } }
+    if (t===JALAN){ g.fillStyle='#d6b27c'; g.fillRect(px,py,T,T); g.fillStyle='#c9a26b'; for(let k=0;k<2;k++) g.fillRect(px+rnd()*28,py+rnd()*28,4,2); }
+    if (t===SAWAH){ g.fillStyle='#a9c95b'; g.fillRect(px,py,T,T); g.fillStyle='#8fb04a'; for(let k=0;k<4;k++) g.fillRect(px+3+k*8,py+4,2,24); g.fillStyle='#6f8f3a'; g.fillRect(px,py+T-2,T,2); }
+    if (t===AIR||t===DERMAGA){ g.fillStyle='#4b9fd8'; g.fillRect(px,py,T,T); g.fillStyle='rgba(255,255,255,.35)'; g.fillRect(px+rnd()*20,py+rnd()*26,8,2); }
+    if (t===DERMAGA){ g.fillStyle='#9c6b3f'; g.fillRect(px+2,py,T-4,T); g.fillStyle='#7d5230'; for(let k=0;k<4;k++) g.fillRect(px+2,py+k*8+6,T-4,2); }
+    if (t===LAPANGAN){ g.fillStyle='#5aa572'; g.fillRect(px,py,T,T); }
+  }
+  // tepi kolam
+  g.strokeStyle='#e8d6a8'; g.lineWidth=6; g.strokeRect(6*T,22*T,10*T,9*T);
+  // garis lapangan badminton
+  g.strokeStyle='#fff'; g.lineWidth=3; g.strokeRect(32*T+10,22*T+10,9*T-20,6*T-20);
+  g.beginPath(); g.moveTo(36.5*T,22*T+10); g.lineTo(36.5*T,28*T-10); g.stroke();
+  g.fillStyle='#333'; g.fillRect(36.5*T-2,22*T+4,4,6*T-8);
+  g.strokeStyle='#ddd'; g.lineWidth=1; for(let k=0;k<12;k++){ g.beginPath(); g.moveTo(36.5*T-4,22*T+10+k*14); g.lineTo(36.5*T+4,22*T+10+k*14); g.stroke(); }
+  // pagar lapangan
+  g.fillStyle='#8b5a2b'; for(let i=0;i<=9*4;i++){ g.fillRect(32*T+i*8-2,22*T-6,3,8); g.fillRect(32*T+i*8-2,28*T-2,3,8);}
+  // pohon
+  for (let y=0;y<H;y++)for(let x=0;x<W;x++) if (peta[y][x]===POHON){
+    const px=x*T+16, py=y*T+16;
+    g.fillStyle='rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(px,py+11,12,5,0,0,7); g.fill();
+    g.fillStyle='#6b4226'; g.fillRect(px-3,py+2,6,10);
+    g.fillStyle = (x*7+y*3)%3===0 ? '#2f7d4a' : '#3a8f55';
+    g.beginPath(); g.arc(px,py-3,13,0,7); g.fill();
+    g.fillStyle='rgba(255,255,255,.12)'; g.beginPath(); g.arc(px-4,py-8,6,0,7); g.fill();
+    if ((x+y)%5===0){ g.fillStyle='#e63946'; g.beginPath(); g.arc(px+5,py-2,2.2,0,7); g.arc(px-6,py+1,2.2,0,7); g.fill(); }
+  }
+})();
+
+function semuaBangunan(){
+  const built = S.bangunan.filter(b=>SLOT[b.slot]).map(b=>{
+    const s = SLOT[b.slot]; const h = hashWarna(b.nama);
+    return {id:'b_'+b.id, nama:b.nama, e:b.e, x:s[0], y:s[1], w:4, h:3, body:h[0], roof:h[1], built:b};
+  });
+  return BANGUNAN.concat(built);
+}
+function hashWarna(s){
+  let h=0; for (const ch of String(s)) h=(h*31+ch.charCodeAt(0))>>>0;
+  const pal=[['#f6d6ad','#b5563f'],['#cde6f5','#3d6f99'],['#e9d5f5','#7b4fa1'],['#fde2e4','#c4566b'],['#e2f0cb','#5b8e3e'],['#fff1c1','#b07d1a'],['#d8e2dc','#4a6b5a']];
+  return pal[h%pal.length];
+}
+function terhalang(px,py){
+  const tx=Math.floor(px/T), ty=Math.floor(py/T);
+  if (tx<0||ty<0||tx>=W||ty>=H) return true;
+  const t = peta[ty][tx];
+  if (t===POHON||t===AIR) return true;
+  for (const b of semuaBangunan()){
+    if (px>b.x*T+2 && px<(b.x+b.w)*T-2 && py>b.y*T+4 && py<(b.y+b.h)*T) return true;
+  }
+  return false;
+}
+const bebas = (x,y)=>!terhalang(x-7,y)&&!terhalang(x+7,y)&&!terhalang(x,y-3)&&!terhalang(x,y+3);
+
+// ================= NPC =================
+// Jadwal harian (jam WIB). Semua orang melihat NPC di tempat yang sama pada jam yang sama.
+const PATROLI = [[23.5,19.3],[23.5,30],[23.5,19.3],[40,18.6],[46,18.6],[23.5,18.6],[23.5,4],[23.5,18.6],[2,18.6],[23.5,18.6]];
+const NPC = [
+  {n:'Bu Siti', c:'#d16ba5', jadwal:[[6,21,18.5,16.6,'Warung buka! Gorengan masih anget.']],
+    lines:['Gorengan masih anget!','Kopi tubruk tiga ribu, Nak.','Jangan lupa ngusulin bangunan ya!']},
+  {n:'Mang Ujang', c:'#5e8c61', jadwal:[[5,11,11,20.6,'Pagi-pagi ikan lagi lapar.'],[11,15,17.6,16.9,'Makan siang dulu di warung.'],[15,19.5,11,20.6,'Mancing sore, siapa tau dapet arwana.']],
+    lines:['Ikan di kolam lagi banyak nih.','Tadi dapet lele segede betis!','Sabar, mancing itu soal timing.']},
+  {n:'Teh Rina', c:'#e09f3e', jadwal:[[7,12,8,12.4,'Lagi bantu tanam padi di sawah.'],[15.5,18.5,35,24,'Ayo badminton sore!'],[19,21.5,19.6,16.9,'Ngeteh dulu di warung.']],
+    lines:['RT 02 pasti juara klasemen!','Lapangannya butuh lampu, usulin dong.','Besok ada misi baru lho.']},
+  {n:'Pak Ronda', c:'#3d5a80', jadwal:[[4,21,27.5,23.7,'Istirahat dulu, nanti malam ronda.']], patroli:true,
+    lines:['Siskamling aman terkendali.','Ada kuis di pos, berani?','Kentongan siap, desa aman.']},
+];
+NPC.forEach((n,i)=>{ n.i=i; n.x=24*T; n.y=19*T; n.tx=n.x; n.ty=n.y; n.msg=''; n.mt=0; n.next=performance.now()+2000+Math.random()*6000; n.ada=false; n.awal=true; });
+function posisiPatroli(t){
+  const seg = []; let total=0;
+  for (let i=0;i<PATROLI.length;i++){ const a=PATROLI[i], b=PATROLI[(i+1)%PATROLI.length]; const d=Math.hypot(b[0]-a[0],b[1]-a[1]); seg.push([a,b,d]); total+=d; }
+  let s = ((t/1000) * 1.2) % total;
+  for (const [a,b,d] of seg){ if (s<=d){ const f=s/d; return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f]; } s-=d; }
+  return PATROLI[0];
+}
+function jadwalNPC(n, t){
+  const h = wib(t).h;
+  if (n.patroli && (h>=21 || h<4)){ const p=posisiPatroli(t); return {x:p[0], y:p[1], kata:'Ronda malam! Tok tok tok 🔦', jalan:true}; }
+  for (const [a,b,x,y,kata] of n.jadwal) if (h>=a && h<b){
+    const o = hashN(Math.floor(t/15000)*31 + n.i*977);
+    return {x: x + ((o%100)/100-.5)*2.2, y: y + (((o>>>8)%100)/100-.5)*1.2, kata};
+  }
+  return null; // sedang di rumah / tidur
+}
+function warungBuka(){ const h=wib().h; return h>=6 && h<21; }
+function aktivitasDesa(){
+  const h = wib().h, ev = eventKini();
+  if (pasarMalam()) return '🎡 Pasar malam akhir pekan';
+  if (h>=21 || h<4) return '🔦 Ronda malam';
+  if (h<6) return '🌙 Desa masih tidur';
+  if (h<9) return '🌅 Pagi di desa';
+  if (h>=15.5 && h<18.5) return '🏸 Badminton sore';
+  return ev.e+' '+({panen:'Panen raya',maling:'Desa heboh maling ayam',hujan:'Hujan, ikan melimpah',kerjabakti:'Kerja bakti',tamu:'Warung diskon',arwana:'Arwana terlihat!',lampu:'Lampu jalan baru',lomba:'Lomba balap karung'}[ev.k]);
+}
+
+// ================= INPUT =================
+addEventListener('keydown', e=>{
+  if (document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    if (e.key==='Escape') document.activeElement.blur();
+    return;
+  }
+  if (sheetTerbuka()){ if (e.key==='Escape') tutupSheet(); if (e.key===' ' && game.onSpace){ e.preventDefault(); game.onSpace(); } return; }
+  if (e.key==='Enter'){ e.preventDefault(); $('chatInput').focus(); return; }
+  if (e.key==='e'||e.key==='E'){ const o=terdekat(); if(o) buka(o.id); return; }
+  keys[e.key.toLowerCase()] = true;
+  if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+});
+addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+addEventListener('blur', ()=>{ keys = {}; });
+
+let drag=null;
+cv.addEventListener('pointerdown', e=>{ drag={x:e.clientX,y:e.clientY,moved:false}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e=>{ if(!drag) return; if (Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>8) drag.moved=true; });
+cv.addEventListener('pointerup', e=>{
+  if (!drag) return; const d=drag; drag=null; if (d.moved) return;
+  const wx = (e.clientX - VW/2)/zoom + cam.x, wy = (e.clientY - VH/2)/zoom + cam.y;
+  // NPC & Pak Kades
+  if (Math.hypot(wx-KADES.x*T, wy-KADES.y*T) < 22){ buka('kades'); return; }
+  for (const [key,o] of peers) if (Math.hypot(wx-o.x, wy-(o.y-14))<22){ bukaProfil(key, o.n); return; }
+  if (Math.hypot(wx-me.x, wy-(me.y-14))<22){ bukaTab('ktp'); return; }
+  for (const n of NPC) if (n.ada && Math.hypot(wx-n.x, wy-(n.y-10))<20){ n.msg=n.lines[Math.floor(Math.random()*n.lines.length)]; n.mt=performance.now(); return; }
+  for (const b of semuaBangunan()) if (wx>=b.x*T && wx<=(b.x+b.w)*T && wy>=(b.y-0.8)*T && wy<=(b.y+b.h)*T){ buka(b.id); return; }
+  for (const o of OBJEK) if (Math.hypot(wx-o.x*T, wy-o.y*T) < 48){ buka(o.id); return; }
+  me.target = {x:wx, y:wy};
+});
+$('zIn').onclick=()=>{ zoom=Math.min(2, zoom*1.2); };
+$('zOut').onclick=()=>{ zoom=Math.max(.55, zoom/1.2); };
+$('zMe').onclick=()=>{ cam.x=me.x; cam.y=me.y; };
+cv.addEventListener('wheel', e=>{ e.preventDefault(); zoom = Math.min(2, Math.max(.55, zoom*(e.deltaY<0?1.1:0.9))); }, {passive:false});
+
+function terdekat(){
+  let best=null, bd=1e9;
+  const cek=(id,x,y,r)=>{ const d=Math.hypot(me.x-x, me.y-y); if(d<r && d<bd){bd=d;best={id};} };
+  cek('kades', KADES.x*T, KADES.y*T, 60);
+  for (const b of semuaBangunan()) cek(b.id, (b.x+b.w/2)*T, (b.y+b.h)*T, Math.max(70, b.w*T/2+30));
+  for (const o of OBJEK) cek(o.id, o.x*T, o.y*T, 80);
+  return best;
+}
+
+// ================= CHAT =================
+const logChat = [];
+function tambahLog(nama, msg, sys){
+  logChat.push({nama,msg,sys}); if (logChat.length>40) logChat.shift();
+  const box = $('chatLog'); box.innerHTML='';
+  logChat.slice(-25).forEach(l=>{
+    const row = el('div', l.sys?{class:'sys'}:{});
+    if (l.sys) row.textContent = l.msg; else { row.append(el('b',{text:l.nama+': '}), document.createTextNode(l.msg)); }
+    box.append(row);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+$('chatForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const msg = bersih($('chatInput').value, 80); if (!msg) return;
+  if (!S.nama){ bukaTab('ktp'); toast('Bikin KTP dulu biar warga kenal kamu!'); return; }
+  $('chatInput').value=''; $('chatInput').blur();
+  me.msg = msg; me.mt = Date.now();
+  tambahLog((S.owner?'👑 ':'')+namaTampil(S.uid, namaku()), msg);
+  kirimPresence(true); majuMisi('chat');
+});
+
+// ================= REALTIME (MULTIPLAYER) =================
+// Hemat kuota: posisi dikirim 3x/detik hanya saat bergerak; presence hanya saat berhenti/berubah.
+let lastPos = 0, lastPresence = 0, tadiGerak = false, sigP = '', lastMtKirim = 0;
+function trackPresence(){
+  if (!kanal || !S.roomOn) return;
+  const p = {n:namaku(), rt:S.rt, c:S.warna, x:Math.round(me.x), y:Math.round(me.y), d:me.dir, emo:me.emo||''};
+  const sig = JSON.stringify(p); if (sig === sigP) return;
+  sigP = sig; lastPresence = performance.now();
+  kanal.track(p).catch(()=>{});
+}
+function kirimPresence(paksa){
+  if (!kanal || !S.roomOn) return;
+  const now = performance.now();
+  if (me.moving && now - lastPos > 333){
+    lastPos = now;
+    kanal.send({type:'broadcast', event:'pos', payload:{id:S.uid, x:Math.round(me.x), y:Math.round(me.y), d:me.dir, m:1}});
+  }
+  if (!me.moving && tadiGerak){
+    kanal.send({type:'broadcast', event:'pos', payload:{id:S.uid, x:Math.round(me.x), y:Math.round(me.y), d:me.dir, m:0}});
+  }
+  tadiGerak = me.moving;
+  if (me.mt && me.mt !== lastMtKirim && me.msg){
+    lastMtKirim = me.mt;
+    kanal.send({type:'broadcast', event:'chat', payload:{id:S.uid, n:namaku(), msg:me.msg}});
+  }
+  if (paksa || (!me.moving && now - lastPresence > 3000)) trackPresence();
+}
+function pasangKanal(){
+  kanal = sb.channel('desa-utama', {config:{presence:{key:S.uid}, broadcast:{self:false}}});
+  kanal.on('broadcast', {event:'pos'}, ({payload:p})=>{
+    if (!p || p.id === S.uid) return;
+    const o = peers.get(p.id); if (!o) return;
+    if (typeof p.x !== 'number' || typeof p.y !== 'number') return;
+    o.tx = Math.max(0, Math.min(W*T, p.x)); o.ty = Math.max(0, Math.min(H*T, p.y));
+    o.d = p.d === -1 ? -1 : 1; o.m = !!p.m;
+  });
+  let segarTerakhir = 0;
+  kanal.on('broadcast', {event:'segarkan'}, ()=>{ const n=Date.now(); if (n-segarTerakhir<3000) return; segarTerakhir=n; muatData(); });
+  kanal.on('broadcast', {event:'chat'}, ({payload:p})=>{
+    if (!p || p.id === S.uid) return;
+    const msg = bersih(p.msg, 80); if (!msg) return;
+    const o = peers.get(p.id);
+    if (o){ o.msg = msg; o.mtLocal = performance.now(); }
+    tambahLog((isKades(p.id)?'👑 ':'')+namaTampil(p.id, o ? o.n : (bersih(p.n,20)||'Warga')), msg);
+  });
+  kanal.on('presence', {event:'sync'}, ()=>{
+    const st = kanal.presenceState(), ada = new Set();
+    for (const key in st){
+      if (key === S.uid) continue;
+      const meta = st[key] && st[key][0]; if (!meta || typeof meta.x !== 'number') continue;
+      ada.add(key);
+      let o = peers.get(key);
+      if (!o){
+        o = {x:meta.x, y:meta.y, tx:meta.x, ty:meta.y, m:false};
+        peers.set(key, o);
+        if (S.sinkronAwal) tambahLog('', '👋 '+(bersih(meta.n,20)||'Warga')+' masuk kampung', true);
+        if (isKades(key)){ tambahLog('', '👑 Pak Kades '+(bersih(meta.n,20)||'')+' datang ke desa!', true); toast('👑 Pak Kades '+(bersih(meta.n,20)||'')+' sedang keliling desa!'); }
+      }
+      o.n = bersih(meta.n,20) || 'Warga'; o.rt = RTS.includes(meta.rt) ? meta.rt : '';
+      o.c = /^#[0-9a-f]{6}$/i.test(meta.c) ? meta.c : '#888'; o.emo = bersih(meta.emo,4);
+      if (!o.m){ o.tx = Math.max(0,Math.min(W*T,meta.x)); o.ty = Math.max(0,Math.min(H*T,meta.y)); o.d = meta.d===-1?-1:1; }
+    }
+    for (const k of [...peers.keys()]) if (!ada.has(k)){ tambahLog('', '🚶 '+peers.get(k).n+' pulang', true); peers.delete(k); }
+    S.sinkronAwal = true; updateTop();
+  });
+  kanal.subscribe(status=>{
+    if (status === 'SUBSCRIBED'){ S.roomOn = true; sigP = ''; trackPresence(); }
+    else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){ S.roomOn = false; }
+    updateTop();
+  });
+}
+
+// ================= LOOP =================
+let tPrev = performance.now();
+function loop(t){
+  const dt = Math.min(.05, (t-tPrev)/1000); tPrev = t;
+  gerak(dt, t);
+  gambar(t);
+  requestAnimationFrame(loop);
+}
+function gerak(dt, t){
+  let vx=0, vy=0;
+  if (keys['a']||keys['arrowleft']) vx-=1;
+  if (keys['d']||keys['arrowright']) vx+=1;
+  if (keys['w']||keys['arrowup']) vy-=1;
+  if (keys['s']||keys['arrowdown']) vy+=1;
+  if (vx||vy) me.target=null;
+  if (me.target){
+    const dx=me.target.x-me.x, dy=me.target.y-me.y, d=Math.hypot(dx,dy);
+    if (d<4) me.target=null; else { vx=dx/d; vy=dy/d; }
+  }
+  const lari = keys['shift'];
+  const sp = (lari?6.2:3.4)*T*dt;
+  const len = Math.hypot(vx,vy)||1;
+  me.moving = !!(vx||vy);
+  if (me.moving){
+    if (vx) me.dir = vx<0?-1:1;
+    const nx = me.x + vx/len*sp, ny = me.y + vy/len*sp;
+    let gerakX=false, gerakY=false;
+    if (bebas(nx, me.y)){ me.x = nx; gerakX=true; }
+    if (bebas(me.x, ny)){ me.y = ny; gerakY=true; }
+    if (me.target && !gerakX && !gerakY) me.target=null;
+  }
+  // kamera
+  cam.x += (me.x-cam.x)*Math.min(1,dt*6); cam.y += (me.y-cam.y)*Math.min(1,dt*6);
+  // peers lerp
+  peers.forEach(o=>{ if(o.tx==null) return; o.x += (o.tx-o.x)*Math.min(1,dt*10); o.y += (o.ty-o.y)*Math.min(1,dt*10); });
+  // NPC
+  const now = Date.now();
+  NPC.forEach(n=>{
+    const j = jadwalNPC(n, now);
+    if (!j){ n.ada=false; n.awal=true; return; }
+    const tx=j.x*T, ty=j.y*T;
+    if (n.awal || !n.ada){ n.x=tx; n.y=ty; n.awal=false; }   // langsung di tempat jadwalnya
+    n.ada=true; n.tx=tx; n.ty=ty;
+    if (t>n.next){
+      n.next = t + 6000 + Math.random()*9000;
+      if (Math.random()<.4){ n.msg = Math.random()<.5 ? j.kata : n.lines[Math.floor(Math.random()*n.lines.length)]; n.mt=t; }
+    }
+    const dx=n.tx-n.x, dy=n.ty-n.y, d=Math.hypot(dx,dy);
+    if (d>6*T){ n.x=tx; n.y=ty; }
+    n.m = d>2; if (n.m){ const s=(j.jalan?1.25:1.6)*T*dt*(d>3*T?3:1); n.x+=dx/d*Math.min(s,d); n.y+=dy/d*Math.min(s,d); n.d = dx<0?-1:1; }
+  });
+  hujan.forEach(r=>{ r.y += 600*dt; r.x -= 80*dt; if (r.y>VH){ r.y=-10; r.x=Math.random()*(VW+100); } });
+  kirimPresence(false);
+  // prompt
+  const o = terdekat();
+  const pr = $('prompt');
+  if (o && !sheetTerbuka()){ pr.style.display='block'; $('promptBtn').textContent = 'E · '+namaObjek(o.id); $('promptBtn').onclick=()=>buka(o.id); }
+  else pr.style.display='none';
+}
+function namaObjek(id){
+  if (id==='kades') return 'Ngobrol dengan Pak Sekdes';
+  const b = semuaBangunan().find(x=>x.id===id) || OBJEK.find(x=>x.id===id);
+  return b ? b.e+' '+b.nama : 'Lihat';
+}
+
+function gambar(t){
+  cx.setTransform(dpr,0,0,dpr,0,0);
+  cx.fillStyle='#2b5a3c'; cx.fillRect(0,0,VW,VH);
+  cx.save();
+  cx.translate(VW/2, VH/2); cx.scale(zoom, zoom); cx.translate(-Math.round(cam.x), -Math.round(cam.y));
+  cx.drawImage(statis, 0, 0);
+  // riak kolam
+  cx.strokeStyle='rgba(255,255,255,.35)'; cx.lineWidth=2;
+  for (let i=0;i<3;i++){ const r=((t/40+i*30)%90); cx.globalAlpha=1-r/90; cx.beginPath(); cx.arc(12.5*T, 26*T, r, 0, 7); cx.stroke(); }
+  cx.globalAlpha=1;
+  // daftar entitas untuk urutan kedalaman
+  const ent = [];
+  semuaBangunan().forEach(b=>ent.push({y:(b.y+b.h)*T, f:()=>gambarBangunan(b)}));
+  ent.push({y:KADES.y*T, f:()=>gambarOrang(KADES.x*T, KADES.y*T, '#264653', 'Pak Sekdes', 1, false, '', t, true)});
+  NPC.forEach(n=>{ if (n.ada) ent.push({y:n.y, f:()=>gambarOrang(n.x,n.y,n.c,n.n,n.d||1,n.m, (t-n.mt<5000)?n.msg:'', t, false, '')}); });
+  if (pasarMalam()) [33,36.5,40,43.5].forEach((sx,i)=>ent.push({y:20.4*T, f:()=>gambarLapak(sx*T, 19.6*T, i, t)}));
+  if (!warungBuka()) ent.push({y:16.05*T, f:()=>label(18.5*T, 16*T, '🔒 TUTUP · buka 06.00', '#3b2a1a', '#fff3c4')});
+  peers.forEach((o,key)=>{ const k=isKades(key); ent.push({y:o.y, f:()=>gambarOrang(o.x,o.y,k?'#9b2226':o.c,namaTampil(key, o.n),o.d,o.m,(o.mtLocal && t-o.mtLocal<6000)?o.msg:'', t, k, o.rt||(k?'Kades':''), false, o.emo)}); });
+  ent.push({y:me.y, f:()=>gambarOrang(me.x,me.y,S.owner?'#9b2226':S.warna,namaTampil(S.uid, namaku())+' (kamu)',me.dir,me.moving,(Date.now()-me.mt<6000)?me.msg:'', t, S.owner, S.rt, !S.owner, me.emo)});
+  ent.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
+  // label objek
+  OBJEK.forEach(o=>label(o.x*T, o.y*T-30, o.e+' '+o.nama, '#fffaf0', '#2f5d43'));
+  if (me.target){ cx.strokeStyle='rgba(255,255,255,.8)'; cx.lineWidth=2; cx.beginPath(); cx.ellipse(me.target.x, me.target.y, 10, 5, 0, 0, 7); cx.stroke(); }
+  cx.restore();
+  // siang-malam (jam WIB, sama untuk semua warga)
+  const jam = wib().h;
+  let a = 0;
+  if (jam>=18.5 || jam<5) a = .55; else if (jam>=17) a = (jam-17)/1.5*.55; else if (jam<6.5) a = (6.5-jam)/1.5*.55;
+  if (a>0){ cx.fillStyle = 'rgba(15,25,70,'+a.toFixed(3)+')'; cx.fillRect(0,0,VW,VH); }
+  if (a>.2){ // lampu-lampu desa menyala
+    cx.save(); cx.globalCompositeOperation='lighter';
+    const lampu = [[18.5,15.8],[29,15.6],[27.5,22.8],[21,19.6],[23.5,17],[11,21]];
+    if (pasarMalam()) lampu.push([33,19.4],[36.5,19.4],[40,19.4],[43.5,19.4]);
+    lampu.forEach(([lx,ly])=>{
+      const sx=(lx*T-cam.x)*zoom+VW/2, sy=(ly*T-cam.y)*zoom+VH/2, r=70*zoom;
+      const g=cx.createRadialGradient(sx,sy,0,sx,sy,r); g.addColorStop(0,'rgba(255,200,110,'+(a*.55).toFixed(3)+')'); g.addColorStop(1,'rgba(255,200,110,0)');
+      cx.fillStyle=g; cx.fillRect(sx-r,sy-r,r*2,r*2);
+    });
+    cx.restore();
+  }
+  if (eventKini().k==='hujan'){
+    cx.fillStyle='rgba(40,60,90,.18)'; cx.fillRect(0,0,VW,VH);
+    cx.strokeStyle='rgba(210,225,255,.55)'; cx.lineWidth=1.2; cx.beginPath();
+    hujan.forEach(r=>{ cx.moveTo(r.x,r.y); cx.lineTo(r.x-4,r.y+12); }); cx.stroke();
+  }
+}
+function gambarLapak(x,y,i,t){
+  const warna=['#e63946','#f4a261','#2a9d8f','#8e7dbe'][i], isi=['🍢','🎈','🍭','🎯'][i];
+  cx.fillStyle='rgba(0,0,0,.18)'; cx.fillRect(x-28,y+20,56,6);
+  cx.fillStyle='#8b5a2b'; cx.fillRect(x-26,y-6,4,28); cx.fillRect(x+22,y-6,4,28);
+  cx.fillStyle='#fff3c4'; cx.fillRect(x-26,y+6,52,16);
+  for (let k=0;k<4;k++){ cx.fillStyle = k%2?'#fff':warna; cx.fillRect(x-30+k*15,y-14,15,10); }
+  cx.font='18px sans-serif'; cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText(isi, x, y+13);
+  cx.fillStyle = Math.sin(t/300+i)>0 ? '#ffd166':'#ff8fab'; cx.beginPath(); cx.arc(x, y-20, 4, 0, 7); cx.fill();
+  if (i===0) label(x+50, y-38, '🎡 Pasar Malam Akhir Pekan', '#2b1d3a', '#ffd166');
+}
+function label(x,y,teks,bg,fg){
+  cx.font = '700 12px Nunito, sans-serif';
+  const w = cx.measureText(teks).width + 14;
+  cx.fillStyle = bg; rr(x-w/2, y-10, w, 20, 10); cx.fill();
+  cx.strokeStyle = fg; cx.lineWidth=1.5; cx.stroke();
+  cx.fillStyle = fg; cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText(teks, x, y+1);
+}
+function rr(x,y,w,h,r){ cx.beginPath(); cx.moveTo(x+r,y); cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r); cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); }
+function gambarBangunan(b){
+  const x=b.x*T, y=b.y*T, w=b.w*T, h=b.h*T;
+  if (b.papan){
+    cx.fillStyle='#6b4226'; cx.fillRect(x+8,y+4,5,T); cx.fillRect(x+w-13,y+4,5,T);
+    cx.fillStyle='#a47148'; rr(x,y-22,w,30,4); cx.fill(); cx.strokeStyle='#5c3d2e'; cx.lineWidth=2; cx.stroke();
+    cx.fillStyle='#fff'; cx.fillRect(x+6,y-17,14,10); cx.fillStyle='#ffe08a'; cx.fillRect(x+24,y-16,16,12); cx.fillStyle='#bde0fe'; cx.fillRect(x+44,y-18,14,11);
+    label(x+w/2, y-36, '📋 Papan Usulan', '#fff3c4', '#6b4226');
+    return;
+  }
+  cx.fillStyle='rgba(0,0,0,.18)'; cx.fillRect(x+6, y+h-6, w, 10);
+  const atap = Math.min(h*0.55, 46);
+  cx.fillStyle=b.body; cx.fillRect(x+4, y+atap-6, w-8, h-atap+6);
+  cx.strokeStyle='rgba(0,0,0,.25)'; cx.lineWidth=2; cx.strokeRect(x+4, y+atap-6, w-8, h-atap+6);
+  cx.fillStyle=b.roof; cx.beginPath(); cx.moveTo(x-4, y+atap); cx.lineTo(x+14, y-2); cx.lineTo(x+w-14, y-2); cx.lineTo(x+w+4, y+atap); cx.closePath(); cx.fill();
+  cx.fillStyle='rgba(255,255,255,.15)'; cx.fillRect(x+14,y,w-28,5);
+  // pintu & jendela
+  cx.fillStyle='#5c3d2e'; cx.fillRect(x+w/2-9, y+h-28, 18, 28);
+  cx.fillStyle='#bde0fe';
+  if (w>=4*T){ cx.fillRect(x+16, y+atap+8, 20, 16); cx.fillRect(x+w-36, y+atap+8, 20, 16); }
+  // emoji
+  cx.font = '22px sans-serif'; cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText(b.e, x+w/2, y+atap/2+2);
+  label(x+w/2, y-16, b.nama, b.built?'#fff3c4':'#fffaf0', b.built?'#8a5a00':'#2f5d43');
+}
+function gambarOrang(x,y,warna,nama,dir,jalan,msg,t,kades,rt,saya,emo){
+  const ay = jalan ? Math.abs(Math.sin(t/90))*3 : 0;
+  cx.fillStyle='rgba(0,0,0,.22)'; cx.beginPath(); cx.ellipse(x, y+2, 10, 4, 0, 0, 7); cx.fill();
+  // kaki
+  cx.fillStyle='#3a3a3a';
+  const k = jalan? Math.sin(t/90)*3 : 0;
+  cx.fillRect(x-5+k, y-6, 4, 7); cx.fillRect(x+1-k, y-6, 4, 7);
+  // badan
+  cx.fillStyle=warna; rr(x-8, y-22-ay, 16, 17, 5); cx.fill();
+  if (kades){ cx.fillStyle='#e9c46a'; cx.fillRect(x-8, y-14-ay, 16, 3); }
+  // kepala
+  cx.fillStyle='#f1c27d'; cx.beginPath(); cx.arc(x, y-29-ay, 8, 0, 7); cx.fill();
+  cx.fillStyle='#2a2a2a'; cx.fillRect(x+dir*3-1, y-30-ay, 2, 2);
+  if (kades){ cx.fillStyle='#111'; cx.fillRect(x-8, y-40-ay, 16, 5); cx.fillRect(x-6, y-44-ay, 12, 5); }
+  else { cx.fillStyle='#3b2a1a'; cx.beginPath(); cx.arc(x, y-31-ay, 8, Math.PI, 0); cx.fill(); }
+  if (saya){ cx.fillStyle='#ffd166'; cx.beginPath(); cx.moveTo(x-5,y-52); cx.lineTo(x+5,y-52); cx.lineTo(x,y-46); cx.closePath(); cx.fill(); }
+  // nama
+  cx.font = '800 11px Nunito, sans-serif'; cx.textAlign='center'; cx.textBaseline='middle';
+  const lbl = rt ? nama+' · '+rt.replace('RT ','RT') : nama;
+  const w = cx.measureText(lbl).width+10;
+  cx.fillStyle = kades? 'rgba(155,34,38,.9)' : 'rgba(20,35,26,.7)'; rr(x-w/2, y+6, w, 15, 7); cx.fill();
+  cx.fillStyle='#fff'; cx.fillText(lbl, x, y+14);
+  if (emo){ cx.font='16px sans-serif'; cx.fillText(emo, x+14, y-36); }
+  if (kades && !msg && !rt){ label(x, y-58, '💬 Pak Sekdes', '#fff', '#9b2226'); }
+  if (kades && rt){ cx.fillStyle='#ffd166'; cx.font='16px sans-serif'; cx.fillText('👑', x, y-52-ay); }
+  if (msg){
+    cx.font = '700 12px Nunito, sans-serif';
+    const pecah = bungkus(msg, 150);
+    const bw = Math.max(...pecah.map(s=>cx.measureText(s).width))+16, bh = pecah.length*15+10;
+    const bx = x-bw/2, by = y-52-bh;
+    cx.fillStyle='#fff'; rr(bx,by,bw,bh,8); cx.fill(); cx.strokeStyle='#6b4226'; cx.lineWidth=1.5; cx.stroke();
+    cx.beginPath(); cx.moveTo(x-5,by+bh); cx.lineTo(x+5,by+bh); cx.lineTo(x,by+bh+6); cx.closePath(); cx.fill();
+    cx.fillStyle='#2a2a2a'; pecah.forEach((s,i)=>cx.fillText(s, x, by+12+i*15));
+  }
+}
+function bungkus(s, maxW){
+  const kata = s.split(' '), out=[]; let baris='';
+  for (const k of kata){ const c = baris? baris+' '+k : k; if (cx.measureText(c).width>maxW && baris){ out.push(baris); baris=k; } else baris=c; }
+  if (baris) out.push(baris); return out.slice(0,4);
+}
+
+// ================= UI TOP =================
+function updateTop(){
+  $('chipKr').textContent = '🪙 '+S.kr+' Kr';
+  const n = peers.size;
+  $('online').textContent = S.roomOn ? (n? (n+1)+' warga online' : 'live · kamu sendiri') : (S.dbOn ? 'menyambung…' : 'mode solo');
+  $('dotLive').classList.toggle('on', S.roomOn);
+  $('chipHari').firstChild.textContent = 'HARI '+hariKe()+' · ';
+}
+setInterval(()=>{ const w=wib(); $('jam').textContent = String(w.jam).padStart(2,'0')+':'+String(w.mnt).padStart(2,'0')+' WIB'; $('chipEvent').textContent = aktivitasDesa(); detak(); }, 1000);
+setTimeout(()=>{ $('hint').style.opacity=0; }, 9000);
+
+// ================= SHEET =================
+let tabAktif='peta', game={};
+const sheetTerbuka = ()=> $('sheet').style.display==='block';
+function bukaSheet(isiFn){
+  game.stop && game.stop(); game = {};
+  const box = $('sheetIsi'); box.innerHTML=''; isiFn(box);
+  $('sheet').style.display='block'; $('sheetBg').style.display='block';
+}
+function tutupSheet(){
+  game.stop && game.stop(); game={};
+  $('sheet').style.display='none'; $('sheetBg').style.display='none'; setNav('peta');
+}
+$('tutup').onclick = tutupSheet; $('sheetBg').onclick = tutupSheet;
+function setNav(t){ tabAktif=t; document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.toggle('aktif', b.dataset.tab===t)); }
+document.querySelectorAll('nav.bottom button').forEach(b=>b.onclick=()=>bukaTab(b.dataset.tab));
+function bukaTab(t){
+  setNav(t);
+  if (t==='peta'){ tutupSheet(); return; }
+  if (t==='usulan') bukaSheet(isiUsulan);
+  if (t==='klasemen') bukaSheet(isiKlasemen);
+  if (t==='ktp') bukaSheet(isiKTP);
+  if (t==='info') bukaSheet(isiInfo);
+}
+function render(){ // render ulang sheet yang sedang terbuka (kecuali game)
+  updateTop();
+  if (!sheetTerbuka() || game.aktif) return;
+  if (tabAktif==='usulan') { const f=document.activeElement && document.activeElement.id==='inUsulan'; if (f) return; $('sheetIsi').innerHTML=''; isiUsulan($('sheetIsi')); }
+  if (tabAktif==='klasemen') { $('sheetIsi').innerHTML=''; isiKlasemen($('sheetIsi')); }
+  if (tabAktif==='info' && !(document.activeElement && document.activeElement.tagName==='TEXTAREA')) { $('sheetIsi').innerHTML=''; isiInfo($('sheetIsi')); }
+}
+function bukaProfil(id, namaHint, rtHint){
+  const o = peers.get(id), j = jabatanDari(id);
+  const nama = (o && o.n) || namaHint || (j && j.nama) || 'Warga';
+  const rt = (o && o.rt) || rtHint || (j && j.rt) || '';
+  setNav('peta');
+  bukaSheet(box=>{
+    box.append(el('h2',{text:'🪪 '+namaTampil(id, nama)}),
+      el('div',{class:'sub', text:(rt? rt+' · ':'')+(diDesa(id)?'🟢 sedang di desa':'⚪ sedang tidak di desa')}),
+      el('div',{class:'kartu'}, el('b',{text:'Jabatan: '}), teksJabatan(id)));
+    if (S.owner && id!==S.uid && !isKades(id)) box.append(panelAngkat(id, nama));
+  });
+}
+function panelAngkat(id, nama){
+  const kini = jabatanDari(id);
+  const sel = el('select',{}); sel.append(el('option',{value:'', text:'— pilih jabatan —'}));
+  Object.entries(JABATAN).forEach(([k,d])=>{ const op = el('option',{value:k, text:d.e+' '+d.n}); if (kini && kini.kode===k) op.selected = true; sel.append(op); });
+  const wrap = el('div',{},
+    el('label',{class:'lbl', text:'👑 Angkat '+nama+' jadi…'}),
+    el('div',{class:'form-row'}, sel, el('button',{class:'btn hijau', onclick:()=>{ if (!sel.value) return toast('Pilih jabatannya dulu.'); Data.angkat(id, sel.value, nama); }}, 'Angkat')),
+    el('div',{class:'sub', text:'Ketua RT diangkat untuk RT tempat warga itu tinggal. Kalau RT itu sudah punya Ketua, Ketua lama otomatis diganti.'}));
+  if (kini) wrap.append(el('button',{class:'btn putih kecil', onclick:()=>Data.copot(id, nama)}, 'Copot jabatan'));
+  return wrap;
+}
+function buka(id){
+  if (id==='papan') return bukaTab('usulan');
+  if (id==='balai') return bukaTab('info');
+  if (id==='kades') { setNav('info'); return bukaSheet(isiKades); }
+  if (id==='kolam') { setNav('peta'); return bukaSheet(isiMancing); }
+  if (id==='ronda') { setNav('peta'); return bukaSheet(isiKuis); }
+  if (id==='warung') { setNav('peta'); return bukaSheet(isiWarung); }
+  if (id==='lapangan') { setNav('peta'); return bukaSheet(box=>{
+    box.append(el('h2',{text:'🏸 Lapangan Badminton'}), el('div',{class:'sub',text:'Tempat warga main tiap sore.'}),
+      el('div',{class:'kartu'}, 'Mini-game badminton belum dibangun. Mau? Usulkan di Papan Usulan biar Pak Kades membangunnya!'),
+      el('button',{class:'btn', onclick:()=>bukaTab('usulan')}, '📋 Ke Papan Usulan'));
+  }); }
+  const b = semuaBangunan().find(x=>x.id===id);
+  if (b && b.built){ setNav('peta'); bukaSheet(box=>{
+    box.append(el('h2',{}, b.e+' ', b.nama), el('div',{class:'sub',text:'Bangunan hasil usulan warga'}),
+      el('div',{class:'kartu emas'}, el('div',{}, '💡 Diusulkan oleh ', el('b',{text:b.built.oleh||'warga'}), b.built.rt? ' ('+b.built.rt+')':''),
+        el('div',{style:'margin-top:4px'}, '🏗️ Dibangun pada Hari ke-'+(b.built.hari||1))));
+    const pt = elPetugas(b.nama); if (pt) box.append(pt);
+    else if (/rumah sakit|puskesmas|klinik|sekolah|pasar|polisi/i.test(b.nama)) box.append(el('div',{class:'sub', text: S.owner ? '👑 Belum ada petugas. Tap avatar warga lalu angkat jadi dokter/guru/dll.' : 'Belum ada petugas. Pak Kades bisa mengangkat warga untuk bertugas di sini.'}));
+  }); }
+}
+
+// ---------- USULAN ----------
+function hitungVote(){ return S.voteCount || {}; }
+function sisaWaktu(ms){ const m=Math.max(0,Math.floor(ms/60000)); return Math.floor(m/60)+' jam '+(m%60)+' menit'; }
+function isiUsulan(box){
+  box.append(el('h2',{text:'📋 Papan Usulan Warga'}),
+    el('div',{class:'sub',text:'Usulkan bangunan untuk desa. Satu warga, satu suara per hari. Tiap jam 20.00 WIB voting ditutup dan usulan dengan suara terbanyak otomatis dibangun.'}),
+    el('div',{class:'kartu emas'}, '⏳ Voting hari ini ditutup dalam ', el('b',{text:sisaWaktu(waktuTutup(siklusKini())-Date.now())}), ' (20.00 WIB)'));
+  if (!S.bisaTulis){
+    box.append(el('div',{class:'kartu'}, '👀 Kamu sedang dalam mode penonton: bisa lihat usulan dan hasil voting, tapi belum bisa ikut mengusulkan atau memilih.'));
+  }
+  const inp = el('input',{id:'inUsulan', maxlength:'60', placeholder:'Contoh: Bangun kafe kopi di pinggir sawah'});
+  const kirim = async ()=>{
+    const v = bersih(inp.value, 60);
+    if (v.length<4){ toast('Usulannya kurang panjang.'); return; }
+    if (!S.nama){ bukaTab('ktp'); toast('Bikin KTP dulu ya.'); return; }
+    const sudah = S.usulan.filter(u=>u.by===S.uid && u.status!=='dibangun').length;
+    if (sudah>=3){ toast('Maksimal 3 usulan aktif per warga.'); return; }
+    inp.value=''; inp.blur(); await Data.tambahUsulan(v); toast('Usulanmu sudah ditempel di papan! 📌');
+  };
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); kirim(); } });
+  if (S.bisaTulis) box.append(el('div',{class:'form-row'}, inp, el('button',{class:'btn hijau', onclick:kirim},'Tempel')));
+  const c = hitungVote(), pilihanSaya = pilihanku();
+  const list = S.usulan.slice().sort((a,b)=>{
+    const sa = a.status==='dibangun'?1:0, sb = b.status==='dibangun'?1:0;
+    if (sa!==sb) return sa-sb; return (c[b.id]||0)-(c[a.id]||0) || b.t-a.t;
+  });
+  if (!list.length) box.append(el('div',{class:'kosong',text:'Papan masih kosong. Jadilah yang pertama mengusulkan!'}));
+  list.slice(0,60).forEach((u,i)=>{
+    const dibangun = u.status==='dibangun';
+    const n = c[u.id]||0;
+    const vote = el('div',{class:'vote'}, el('div',{class:'n',text:String(n)}),
+      dibangun ? el('span',{class:'badge dibangun',text:'✓ jadi'}) : !S.bisaTulis ? el('span',{class:'badge',text:'suara'}) :
+      el('button',{class: pilihanSaya===u.id?'pilih':'', onclick:()=>{ if(!S.nama){bukaTab('ktp');toast('Bikin KTP dulu ya.');return;} Data.pilih(u.id); }}, pilihanSaya===u.id?'✓ Dipilih':'Pilih'));
+    const aksi = [];
+    if (S.owner && !dibangun) aksi.push(el('button',{class:'btn kecil', onclick:()=>Data.bangun(u)},'🏗️ Bangun'));
+    if (S.owner || (u.by===S.uid && !dibangun)) aksi.push(el('button',{class:'btn putih kecil', onclick:()=>Data.hapusUsulan(u.id)},'Hapus'));
+    box.append(el('div',{class:'kartu usulan'+(i===0&&!dibangun&&n>0?' emas':'')},
+      vote,
+      el('div',{class:'isi'},
+        el('div',{class:'teks'}, tebakEmoji(u.teks)+' ', bersih(u.teks,60)),
+        el('div',{class:'meta'}, 'oleh '+(bersih(u.nama,20)||'warga')+(RTS.includes(u.rt)?' · '+u.rt:'')+' · '+waktuLalu(u.t)),
+        aksi.length? el('div',{style:'display:flex;gap:6px;margin-top:6px'}, aksi):null
+      )));
+  });
+  if (S.owner) box.append(el('div',{class:'sub',style:'margin-top:8px'}, '👑 Kamu Kades (pemilik). Pemenang dibangun otomatis tiap 20.00 WIB, tapi kamu juga bisa menekan "Bangun" untuk membangun lebih cepat.'));
+}
+function waktuLalu(t){ const d=(Date.now()-(t||0))/60000; if(d<1) return 'barusan'; if(d<60) return Math.floor(d)+' mnt lalu'; if(d<1440) return Math.floor(d/60)+' jam lalu'; return Math.floor(d/1440)+' hari lalu'; }
+
+// ---------- KLASEMEN ----------
+function isiKlasemen(box){
+  box.append(el('h2',{text:'🏆 Klasemen RT'}), el('div',{class:'sub',text:'Kumpulkan Kr dari mancing dan kuis untuk mengharumkan RT-mu.'}));
+  const daftar = S.dbOn ? S.skor : (S.nama? [{nama:namaku(), rt:S.rt, kr:S.kr, id:S.uid}] : []);
+  const tot = bonusEventRT();
+  if (S.dbOn && S.rtTotal) RTS.forEach(r=>{ tot[r] += Math.max(0, Number(S.rtTotal[r])||0); });
+  else daftar.forEach(s=>{ if (RTS.includes(s.rt)) tot[s.rt] += Math.max(0, Math.min(1e6, Number(s.kr)||0)); });
+  const max = Math.max(1, ...Object.values(tot));
+  RTS.slice().sort((a,b)=>tot[b]-tot[a]).forEach((r,i)=>{
+    const bar = el('div',{}); bar.style.width = (tot[r]/max*100)+'%'; bar.style.background = RT_WARNA[r];
+    box.append(el('div',{class:'rt-row'}, el('div',{class:'nama'}, (i===0&&tot[r]>0?'🥇 ':'')+r), el('div',{class:'bar'}, bar), el('div',{class:'angka',text:tot[r]+' Kr'})));
+    const ket = [...S.jabatan.entries()].find(([id,j])=>j.kode==='ketua_rt' && j.rt===r);
+    box.append(el('div',{class:'sub', style:'margin:-4px 0 8px 74px;font-size:12px'}, ket ? '🎖️ Ketua: '+(ket[1].nama||'warga') : 'Belum ada Ketua RT'));
+  });
+  box.append(el('div',{class:'sub',style:'margin-top:4px',text:'Termasuk poin dari event desa (panen, ronda, lomba) yang terjadi otomatis tiap 6 jam.'}));
+  box.append(el('h2',{style:'font-size:18px;margin-top:16px',text:'Warga Terkaya'}));
+  const top = daftar.slice().sort((a,b)=>(b.kr||0)-(a.kr||0)).slice(0,10);
+  if (!top.length) box.append(el('div',{class:'kosong',text:'Belum ada yang main. Ayo ke kolam pancing!'}));
+  else { const tb = el('table',{class:'top'}); top.forEach((s,i)=>tb.append(el('tr',{}, el('td',{text:(i+1)+'.'}), el('td',{}, el('b',{text:bersih(s.nama,20)||'Warga'}), ' ', el('span',{class:'badge',text:RTS.includes(s.rt)?s.rt:'-'})), el('td',{class:'r',text:(Number(s.kr)||0)+' Kr'})))); box.append(tb); }
+  if (!S.dbOn) box.append(el('div',{class:'sub',style:'margin-top:10px',text:'Mode solo: belum tersambung ke server desa.'}));
+}
+
+// ---------- KTP ----------
+function isiKTP(box){
+  let warna = S.warna;
+  box.append(el('h2',{text:'🪪 KTP Warga'}), el('div',{class:'sub',text:'Identitasmu di Kampung Rame. Nama ini yang dilihat warga lain.'}));
+  const foto = el('div',{class:'foto'}); const mini = document.createElement('canvas'); mini.width=60; mini.height=72; foto.append(mini);
+  const gambarMini=()=>{ const g=mini.getContext('2d'); g.clearRect(0,0,60,72); g.fillStyle=warna; g.beginPath(); g.roundRect?g.roundRect(14,38,32,30,8):g.rect(14,38,32,30); g.fill(); g.fillStyle='#f1c27d'; g.beginPath(); g.arc(30,26,14,0,7); g.fill(); g.fillStyle='#3b2a1a'; g.beginPath(); g.arc(30,22,14,Math.PI,0); g.fill(); };
+  const inNama = el('input',{maxlength:'16', placeholder:'Nama panggilan'}); inNama.value = S.nama;
+  const inRT = el('select',{}); RTS.forEach(r=>{ const o=el('option',{value:r,text:r}); if(r===S.rt) o.selected=true; inRT.append(o); });
+  const kartu = el('div',{class:'ktp'}, foto, el('div',{},
+    el('div',{class:'judul',text:'KARTU TANDA WARGA · KAMPUNG RAME'}),
+    el('div',{class:'baris'}, el('b',{text:'Nama'}), ': ', S.nama||'—'),
+    el('div',{class:'baris'}, el('b',{text:'RT'}), ': ', S.rt),
+    el('div',{class:'baris'}, el('b',{text:'Jabatan'}), ': ', teksJabatan(S.uid)),
+    el('div',{class:'baris'}, el('b',{text:'Kekayaan'}), ': ', S.kr+' Kr'),
+    el('div',{class:'baris'}, el('b',{text:'No. Warga'}), ': ', S.uid.slice(-6).toUpperCase(), ' ',
+      el('button',{class:'btn putih kecil', style:'padding:1px 7px;font-size:11px', onclick:()=>{ navigator.clipboard.writeText(S.uid).then(()=>toast('No. Warga lengkap disalin')).catch(()=>toast(S.uid)); }}, 'Salin'))));
+  const wp = el('div',{class:'warna-pilih'});
+  WARNA.forEach(c=>{ const b=el('button',{class:c===warna?'pilih':'', 'aria-label':'warna '+c}); b.style.background=c; b.onclick=()=>{ warna=c; wp.querySelectorAll('button').forEach(x=>x.classList.remove('pilih')); b.classList.add('pilih'); gambarMini(); }; wp.append(b); });
+  box.append(kartu, el('label',{class:'lbl',text:'Nama panggilan'}), el('div',{class:'form-row'}, inNama),
+    el('label',{class:'lbl',text:'RT (tim)'}), el('div',{class:'form-row'}, inRT),
+    el('label',{class:'lbl',text:'Warna baju'}), wp,
+    el('button',{class:'btn hijau', style:'width:100%;margin-top:8px', onclick:()=>{
+      const n = bersih(inNama.value,16);
+      if (n.length<2){ toast('Nama minimal 2 huruf.'); return; }
+      const baru = !S.nama;
+      S.nama=n; S.rt=inRT.value; S.warna=warna; ls.set('ktp',{nama:S.nama, rt:S.rt, warna:S.warna});
+      trackPresence(); simpanWarga();
+      toast(baru? 'Selamat datang, '+n+'! Kamu resmi jadi warga 🎉' : 'KTP diperbarui.');
+      if (baru){ tambahLog('', '🎉 '+n+' resmi jadi warga '+S.rt, true); bonusHarian(); }
+      tutupSheet();
+    }}, S.nama? 'Simpan KTP' : 'Daftar Jadi Warga'));
+  gambarMini();
+}
+
+// ---------- INFO ----------
+function teksInfo(){ return bersih(S.info.teks, 600) || 'Selamat datang di Kampung Rame! Tempel usulan di Papan Usulan dekat perempatan. Usulan dengan suara terbanyak akan dibangun Pak Kades. Main mancing dan kuis untuk kumpulkan Kr buat RT-mu!'; }
+function isiInfo(box){
+  box.append(el('h2',{text:'📢 Pusat Informasi Desa'}), el('div',{class:'sub',text:'Pengumuman resmi dari Balai Desa.'}));
+  box.append(el('div',{class:'kartu emas', style:'white-space:pre-wrap'}, teksInfo()));
+  if (S.owner){
+    const ta = el('textarea',{maxlength:'600', placeholder:'Tulis pengumuman…'}); ta.value = S.info.teks||'';
+    box.append(el('label',{class:'lbl',text:'👑 Pengumuman Pak Kades: langsung muncul di layar semua warga yang online'}), ta, el('button',{class:'btn', onclick:async()=>{ await Data.setInfo(bersih(ta.value,600)); ta.blur(); toast('📣 Pengumuman disiarkan ke seluruh desa!'); }}, '📣 Umumkan ke Semua Warga'));
+  }
+  // misi harian
+  box.append(el('h2',{style:'font-size:18px;margin-top:16px',text:'🏛️ Struktur Desa'}));
+  const kd = [...S.kades.entries()];
+  kd.forEach(([id,n])=>box.append(el('div',{class:'kartu emas'}, (diDesa(id)?'🟢 ':'⚪ ')+'👑 Kepala Desa: ', el('b',{text:n||'—'}))));
+  const urut = Object.keys(JABATAN);
+  const pej = [...S.jabatan.entries()].sort((a,b)=>urut.indexOf(a[1].kode)-urut.indexOf(b[1].kode) || String(a[1].rt).localeCompare(String(b[1].rt)));
+  if (!pej.length) box.append(el('div',{class:'sub', text:'Belum ada pejabat desa. '+(S.owner?'Cari warga di bawah atau tap avatarnya untuk mengangkat.':'Pak Kades bisa mengangkat warga jadi Ketua RT, dokter, guru, dan lainnya.')}));
+  pej.forEach(([id,j])=>box.append(el('div',{style:'display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--garis);cursor:pointer', onclick:()=>bukaProfil(id, j.nama, j.rt)},
+    el('span',{}, (diDesa(id)?'🟢 ':'⚪ ')+namaTampil(id, j.nama||'warga')), el('span',{class:'badge', text:(j.kode==='ketua_rt'&&j.rt?'Ketua '+j.rt:JABATAN[j.kode].n)}))));
+  if (S.owner && S.dbOn){
+    const q = el('input',{maxlength:'16', placeholder:'Cari nama warga…'}), hasil = el('div',{});
+    const cari = async ()=>{
+      const t = bersih(q.value,16).replace(/[%_,()]/g,''); if (t.length<1) return;
+      const {data, error} = await sb.from('warga').select('id,nama,rt').ilike('nama', '%'+t+'%').limit(10);
+      hasil.innerHTML=''; if (error) return gagal(error);
+      if (!data.length) hasil.append(el('div',{class:'sub', text:'Tidak ada warga bernama itu.'}));
+      data.forEach(w=>hasil.append(el('div',{style:'display:flex;justify-content:space-between;align-items:center;padding:5px 0'},
+        el('span',{}, namaTampil(w.id, bersih(w.nama,16))+' · '+w.rt), el('button',{class:'btn kecil', onclick:()=>bukaProfil(w.id, bersih(w.nama,16), w.rt)}, 'Pilih'))));
+    };
+    q.addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); cari(); } });
+    box.append(el('label',{class:'lbl', text:'👑 Angkat pejabat desa'}), el('div',{class:'form-row'}, q, el('button',{class:'btn hijau', onclick:cari}, 'Cari')), hasil);
+  }
+  const m = misiHariIni(), p = statusMisi();
+  box.append(el('h2',{style:'font-size:18px;margin-top:16px',text:'🎯 Misi Hari Ini'}),
+    el('div',{class:'kartu'+(p.selesai?' emas':'')}, el('b',{text:m.teks}), el('div',{class:'meta',style:'font-size:12px;color:var(--abu)'}, p.selesai? '✅ Selesai! +15 Kr sudah diterima' : 'Progres '+Math.min(p.n,m.target)+'/'+m.target+' · hadiah 15 Kr · ganti tiap tengah malam')));
+  const st = ls.get('harian',{streak:0});
+  if (st.streak) box.append(el('div',{class:'sub'}, '🔥 Streak datang: '+st.streak+' hari. Datang tiap hari, bonus makin besar (maks 35 Kr).'));
+  // kabar desa
+  box.append(el('h2',{style:'font-size:18px;margin-top:16px',text:'📰 Kabar Desa'}));
+  const sk = slotKini();
+  for (let s=sk; s>=Math.max(0,sk-5); s--){
+    const e = eventDi(s), w = wib(e.mulai);
+    box.append(el('div',{class:'kartu'+(s===sk?' emas':'')}, el('b',{}, e.e+' '+e.teks), el('div',{class:'meta',style:'font-size:12px;color:var(--abu)'}, (s===sk?'Sedang berlangsung · ':'')+'Hari ke-'+hariKe(e.mulai)+', '+String(w.jam).padStart(2,'0')+'.00 WIB'+(e.bonus?' · +'+e.bonus+' poin '+e.rt:''))));
+  }
+  // jadwal
+  box.append(el('h2',{style:'font-size:18px;margin-top:16px',text:'🗓️ Jadwal Desa (WIB)'}));
+  [['06.00–21.00','🍵 Warung Bu Siti buka'],['05.00–19.30','🎣 Mang Ujang mancing (istirahat siang di warung)'],['15.30–18.30','🏸 Badminton sore bareng Teh Rina'],['20.00','⏳ Voting ditutup, pemenang otomatis dibangun'],['20.00–21.00','✨ Jam arwana: ikan langka lebih sering muncul'],['21.00–04.00','🔦 Pak Ronda patroli keliling desa'],['Jumat & Sabtu 18.00–23.00','🎡 Pasar malam'],['Tiap 6 jam','📰 Event desa baru'],['00.00','🎯 Misi harian baru']]
+    .forEach(([j,a])=>box.append(el('div',{style:'display:flex;gap:10px;padding:5px 0;border-bottom:1px dashed var(--garis);font-size:14px'}, el('b',{style:'min-width:120px;color:var(--hijau)',text:j}), el('span',{text:a}))));
+  box.append(el('h2',{style:'font-size:18px;margin-top:16px',text:'🏗️ Riwayat Pembangunan'}));
+  const r = S.bangunan.slice().sort((a,b)=>b.t-a.t);
+  if (!r.length) box.append(el('div',{class:'kosong',text:'Belum ada bangunan dari usulan warga. Usulanmu bisa jadi yang pertama!'}));
+  r.forEach(b=>box.append(el('div',{class:'kartu'}, el('b',{}, (b.e||'🏠')+' '+bersih(b.nama,40)), el('div',{class:'meta',style:'font-size:12px;color:var(--abu)'}, 'Hari ke-'+(b.hari||1)+' · usulan '+(bersih(b.oleh,20)||'warga')+(RTS.includes(b.rt)?' ('+b.rt+')':'')))));
+  box.append(el('div',{class:'sub', style:'margin-top:12px'}, S.dbOn ? '🟢 Tersambung ke server desa.' : '🟡 Mode solo: belum tersambung ke server desa.'));
+}
+function isiKades(box){
+  const c = hitungVote();
+  const unggul = S.usulan.filter(u=>u.status!=='dibangun').sort((a,b)=>(c[b.id]||0)-(c[a.id]||0))[0];
+  const kd = namaKades();
+  const kadesOnline = [...peers.keys()].some(isKades);
+  const sapa = S.owner ? 'Siap, Pak Kades! Balai aman, semua usulan warga sudah saya tempel di papan.'
+    : (S.nama ? 'Saya Sekretaris Desa, wakilnya Pak Kades'+(kd?' '+kd:'')+'. '+(kadesOnline?'Pak Kades lagi keliling desa sekarang, coba cari mahkotanya! 👑':'Pak Kades sedang tidak di desa, ada yang bisa saya bantu?') : 'Kamu belum punya KTP. Daftar dulu biar jadi warga resmi!');
+  box.append(el('h2',{text:'🎩 Pak Sekdes'}), el('div',{class:'sub',text:'Sekretaris Desa · jaga Balai Desa'}),
+    el('div',{class:'kartu'}, '"Halo, '+namaku()+'! '+sapa+'"'),
+    el('div',{class:'kartu emas', style:'white-space:pre-wrap'}, '📢 ', teksInfo()));
+  if (unggul) box.append(el('div',{class:'kartu'}, '🔥 Usulan terpopuler saat ini: ', el('b',{text:bersih(unggul.teks,60)}), ' ('+(c[unggul.id]||0)+' suara)'));
+  box.append(el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},
+    el('button',{class:'btn', onclick:()=>bukaTab('usulan')},'📋 Lihat Usulan'),
+    !S.nama? el('button',{class:'btn hijau', onclick:()=>bukaTab('ktp')},'🪪 Bikin KTP'):null));
+}
+
+// ---------- WARUNG ----------
+function isiWarung(box){
+  box.append(el('h2',{text:'🍵 Warung Bu Siti'}), el('div',{class:'sub',text:'Jajan pakai Kr. Jajananmu kelihatan sama warga lain! Buka 06.00–21.00 WIB.'}));
+  const ptW = elPetugas('warung'); if (ptW) box.append(ptW);
+  if (!warungBuka()){ box.append(el('div',{class:'kartu'}, '🔒 Warung sudah tutup, Bu Siti lagi istirahat. Datang lagi jam 06.00 WIB ya!')); return; }
+  const diskon = eventKini().k==='tamu';
+  if (diskon) box.append(el('div',{class:'kartu emas'}, '🧳 Lagi diskon! Semua jajanan cuma 1 Kr.'));
+  const menu = [{n:'Kopi tubruk',e:'☕',h:2},{n:'Gorengan',e:'🍤',h:1},{n:'Es teh manis',e:'🧋',h:2},{n:'Mie rebus',e:'🍜',h:4},{n:'Kerupuk',e:'🍘',h:1}].map(m=>diskon?{...m,h:1}:m);
+  menu.forEach(m=>box.append(el('div',{class:'kartu warung-item'}, el('div',{class:'e',text:m.e}), el('div',{class:'isi'}, el('b',{text:m.n}), el('div',{class:'meta',style:'font-size:12px;color:var(--abu)',text:m.h+' Kr'})),
+    el('button',{class:'btn kecil', onclick:()=>{ if (S.kr<m.h){ toast('Kr kamu kurang. Mancing dulu yuk!'); return; } tambahKr(-m.h); majuMisi('jajan'); me.emo=m.e; me.msg='Nyam, '+m.n.toLowerCase()+'!'; me.mt=Date.now(); kirimPresence(true); toast(m.e+' '+m.n+' dibeli!'); tutupSheet(); setTimeout(()=>{ me.emo=''; kirimPresence(true); }, 60000); }}, 'Beli'))));
+}
+
+// ---------- MANCING ----------
+const IKAN = [{n:'Ikan Mujair',e:'🐟',kr:3,w:38},{n:'Ikan Mas',e:'🐠',kr:5,w:26},{n:'Lele',e:'🐟',kr:4,w:16},{n:'Sandal jepit',e:'👡',kr:0,w:10},{n:'Udang galah',e:'🦐',kr:8,w:7},{n:'Arwana langka!',e:'✨',kr:25,w:3}];
+function bobotIkan(i){ const ev=eventKini(), h=wib().h; let w=i.w; if (i.kr>=25 && (ev.k==='arwana' || (h>=20 && h<21))) w*=5; return w; }
+function acakIkan(){ let r=Math.random()*IKAN.reduce((s,i)=>s+bobotIkan(i),0); for(const i of IKAN){ r-=bobotIkan(i); if(r<=0) return i; } return IKAN[0]; }
+function isiMancing(box){
+  game.aktif = true;
+  box.append(el('h2',{text:'🎣 Kolam Pancing'}), el('div',{class:'sub',text:'Lempar kail, tunggu ikan nyangkut, lalu tarik saat jarum merah ada di zona hijau. Arwana lebih sering muncul jam 20.00–21.00 WIB.'}));
+  const ev = eventKini(); if (ev.k==='hujan'||ev.k==='arwana') box.append(el('div',{class:'kartu emas'}, ev.e+' ', ev.teks));
+  const ptK = elPetugas('kolam'); if (ptK) box.append(ptK);
+  const besar = el('div',{class:'besar',text:'🎣'}), status = el('div',{class:'status',text:'Siap mancing?'});
+  const zona = el('div',{class:'pancing-zona'}), jarum = el('div',{class:'pancing-jarum'});
+  const bar = el('div',{class:'pancing-bar', style:'visibility:hidden'}, zona, jarum);
+  const tombol = el('button',{class:'btn', style:'min-width:180px;font-size:18px'}, 'Lempar Kail');
+  box.append(el('div',{class:'game-area'}, besar, status, bar, tombol, el('div',{class:'sub',style:'margin-top:10px',text:'Tips: tekan Spasi atau tombol.'})));
+  let fase='siap', pos=0, arah=1, zx=0, zw=0, raf=0, to=0, lastT=0, cepat=1;
+  const anim = (t)=>{ const dt=Math.min(.05,(t-lastT)/1000); lastT=t; pos += arah*dt*cepat; if(pos>1){pos=1;arah=-1;} if(pos<0){pos=0;arah=1;} jarum.style.left='calc('+(pos*100)+'% - 3px)'; raf=requestAnimationFrame(anim); };
+  const aksi = ()=>{
+    if (fase==='siap'||fase==='selesai'){
+      fase='tunggu'; besar.textContent='🌊'; status.textContent='Menunggu ikan…'; tombol.disabled=true; bar.style.visibility='hidden';
+      to = setTimeout(()=>{
+        fase='tarik'; besar.textContent='❗'; status.textContent='Nyangkut! Tarik sekarang!'; tombol.disabled=false; tombol.textContent='TARIK!';
+        zw = .14 + Math.random()*.12; zx = Math.random()*(1-zw); zona.style.left=(zx*100)+'%'; zona.style.width=(zw*100)+'%';
+        cepat = .9 + Math.random()*.9; pos=0; arah=1; bar.style.visibility='visible'; lastT=performance.now(); raf=requestAnimationFrame(anim);
+        to = setTimeout(()=>{ if(fase==='tarik'){ selesai(false,'Kelamaan, ikannya kabur 💨'); } }, 3500);
+      }, 1200 + Math.random()*2800);
+    } else if (fase==='tarik'){
+      cancelAnimationFrame(raf); clearTimeout(to);
+      const kena = pos>=zx && pos<=zx+zw;
+      selesai(kena);
+    }
+  };
+  const selesai = (kena, pesan)=>{
+    cancelAnimationFrame(raf); fase='selesai'; tombol.textContent='Lempar Lagi'; tombol.disabled=false;
+    if (kena){ const i=acakIkan(); const kali = eventKini().k==='hujan'?2:1; const dapat=i.kr*kali; besar.textContent=i.e; status.textContent = dapat? 'Dapat '+i.n+'! +'+dapat+' Kr'+(kali>1?' (bonus hujan)':'') : 'Yah, dapat '+i.n+' 😅'; if(dapat){ tambahKr(dapat); majuMisi('ikan'); } if (i.kr>=8){ me.msg='Dapat '+i.n+' '+i.e; me.mt=Date.now(); kirimPresence(true); } }
+    else { besar.textContent='💨'; status.textContent = pesan || 'Meleset! Ikannya lepas.'; }
+  };
+  tombol.onclick = aksi; game.onSpace = aksi;
+  game.stop = ()=>{ cancelAnimationFrame(raf); clearTimeout(to); };
+}
+
+// ---------- KUIS ----------
+const SOAL = [
+  ['Ibu kota provinsi Jawa Barat adalah…',['Bandung','Semarang','Bogor','Serang'],0],
+  ['Alat musik bambu yang digoyangkan, khas Sunda, adalah…',['Angklung','Gamelan','Sasando','Kolintang'],0],
+  ['RT adalah singkatan dari…',['Rukun Tetangga','Rumah Tangga','Ruang Tamu','Rukun Teman'],0],
+  ['Tempe dibuat dari fermentasi…',['Kedelai','Jagung','Singkong','Kacang hijau'],0],
+  ['Hari Kemerdekaan Indonesia diperingati setiap tanggal…',['17 Agustus','1 Juni','28 Oktober','10 November'],0],
+  ['Danau terbesar di Indonesia adalah…',['Danau Toba','Danau Maninjau','Danau Poso','Danau Batur'],0],
+  ['Lambang negara Indonesia adalah…',['Garuda Pancasila','Harimau','Komodo','Merak'],0],
+  ['Jaga malam keliling kampung disebut…',['Ronda','Arisan','Kerja bakti','Kenduri'],0],
+  ['Orang yang memainkan wayang kulit disebut…',['Dalang','Sinden','Penabuh','Penari'],0],
+  ['Batik diakui UNESCO sebagai warisan budaya pada tahun…',['2009','1999','2015','2020'],0],
+  ['Rumah adat Minangkabau disebut…',['Rumah Gadang','Joglo','Honai','Tongkonan'],0],
+  ['Rendang adalah masakan khas daerah…',['Sumatera Barat','Jawa Timur','Bali','Aceh'],0],
+];
+function isiKuis(box){
+  game.aktif = true;
+  const jeda = ls.get('kuisT',0), sisa = Math.ceil((jeda + 60000 - Date.now())/1000);
+  box.append(el('h2',{text:'🔦 Kuis Pos Ronda'}), el('div',{class:'sub',text:'Jawab 3 soal. Tiap jawaban benar +3 Kr.'}));
+  const ptR = elPetugas('pos ronda'); if (ptR) box.append(ptR);
+  if (sisa>0){ box.append(el('div',{class:'kartu'}, 'Pak Ronda lagi ngopi. Kuis berikutnya dalam '+sisa+' detik ☕')); return; }
+  const soal = SOAL.slice().sort(()=>Math.random()-.5).slice(0,3);
+  let i=0, benar=0;
+  const area = el('div',{}); box.append(area);
+  const tampil = ()=>{
+    area.innerHTML='';
+    if (i>=soal.length){
+      ls.set('kuisT', Date.now()); if (benar) tambahKr(benar*3);
+      area.append(el('div',{class:'game-area'}, el('div',{class:'besar',text: benar===3?'🏆':benar?'👍':'😅'}), el('div',{class:'status',text:'Benar '+benar+'/3 · +'+(benar*3)+' Kr'}), el('button',{class:'btn',onclick:tutupSheet},'Selesai')));
+      if (benar===3){ me.msg='Kuis ronda sempurna! 🏆'; me.mt=Date.now(); kirimPresence(true); }
+      return;
+    }
+    const [q, ops, k] = soal[i];
+    const urut = ops.map((o,j)=>({o, benar:j===k})).sort(()=>Math.random()-.5);
+    const grid = el('div',{class:'opsi'});
+    urut.forEach(u=>{ const b = el('button',{text:u.o}); b.onclick=()=>{
+      grid.querySelectorAll('button').forEach(x=>{ x.disabled=true; if (urut[[...grid.children].indexOf(x)].benar) x.classList.add('benar'); });
+      if (u.benar){ benar++; majuMisi('kuis'); } else b.classList.add('salah');
+      setTimeout(()=>{ i++; tampil(); }, 900);
+    }; grid.append(b); });
+    area.append(el('div',{class:'kartu'}, el('div',{class:'meta',style:'font-size:12px;color:var(--abu)',text:'Soal '+(i+1)+' dari 3'}), el('b',{text:q})), grid);
+  };
+  tampil();
+}
+
+// ================= KONEKSI KE SUPABASE =================
+async function sambung(){
+  if (!window.supabase || !window.supabase.createClient){ toast('Tidak bisa memuat server desa, main mode solo dulu.'); updateTop(); return; }
+  try {
+    sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true, autoRefreshToken:true}});
+    let {data:{session}} = await sb.auth.getSession();
+    if (!session){
+      const r = await sb.auth.signInAnonymously();
+      if (r.error) throw r.error;
+      session = r.data.session;
+    }
+    S.uid = session.user.id; S.dbOn = true;
+    const w = await sb.from('warga').select('nama,rt,warna,kr').eq('id', S.uid).maybeSingle();
+    if (w.data){
+      S.nama = w.data.nama; S.rt = w.data.rt; S.warna = w.data.warna; S.kr = w.data.kr; S.terdaftar = true;
+      ls.set('ktp', {nama:S.nama, rt:S.rt, warna:S.warna}); ls.set('kr', S.kr);
+      if (sheetTerbuka() && tabAktif==='ktp') tutupSheet();
+    } else if (S.nama){
+      S.kr = 0; await simpanWarga();
+    } else S.kr = 0;
+    updateTop();
+    const adm = await sb.rpc('saya_admin'); S.owner = !!adm.data;
+    await muatKades();
+    if (S.owner) setTimeout(()=>toast('👑 Selamat datang, Pak Kades '+namaku()+'!'), 1200);
+    await detak(true);
+    await muatData();
+    jalankanKr();
+    setInterval(muatData, 15000);
+    pasangKanal();
+  } catch(e){
+    console.warn('sambung', e);
+    S.dbOn = false;
+    toast(/anonymous/i.test((e && e.message)||'') ? 'Login tamu belum diaktifkan di Supabase (lihat panduan).' : 'Tidak bisa tersambung ke desa, main mode solo dulu.');
+  }
+  updateTop();
+}
+
+// ================= MULAI =================
+$('chipEvent').onclick = ()=>bukaTab('info');
+$('chipEvent').textContent = aktivitasDesa();
+updateTop();
+requestAnimationFrame(loop);
+rekapKunjungan();
+bonusHarian();
+sambung().then(()=>{ if (!S.dbOn) cekBangunanBaru(); detak(); });
+if (!S.nama) setTimeout(()=>{ bukaTab('ktp'); }, 700);
+})();
+</script>
+</body>
+</html>
